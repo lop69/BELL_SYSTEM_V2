@@ -1,8 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Plus, Edit } from "lucide-react";
+import { Calendar, Plus, Edit, Clock } from "lucide-react";
 import { motion, Variants } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { format, differenceInMilliseconds } from "date-fns";
 
 const containerVariants: Variants = {
   hidden: { opacity: 1 },
@@ -27,8 +29,54 @@ const itemVariants: Variants = {
   },
 };
 
+// Mock schedule for today
+const todaySchedule = [
+  { time: "09:00", label: "Morning Assembly" },
+  { time: "11:00", label: "Lecture End" },
+  { time: "13:00", label: "Lunch Break" },
+  { time: "15:00", label: "Lab Session" },
+  { time: "17:00", label: "End of Day" },
+];
+
 const Dashboard = () => {
   const navigate = useNavigate();
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [nextBell, setNextBell] = useState<{ time: Date; label: string } | null>(null);
+  const [countdown, setCountdown] = useState('00:00:00');
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date();
+      setCurrentTime(now);
+
+      const upcomingBell = todaySchedule
+        .map(bell => {
+          const [hours, minutes] = bell.time.split(':').map(Number);
+          const bellTime = new Date(now);
+          bellTime.setHours(hours, minutes, 0, 0);
+          return { time: bellTime, label: bell.label };
+        })
+        .find(bell => bell.time > now);
+
+      setNextBell(upcomingBell || null);
+
+      if (upcomingBell) {
+        const diff = differenceInMilliseconds(upcomingBell.time, now);
+        if (diff > 0) {
+          const hours = Math.floor(diff / (1000 * 60 * 60)).toString().padStart(2, '0');
+          const minutes = Math.floor((diff / (1000 * 60)) % 60).toString().padStart(2, '0');
+          const seconds = Math.floor((diff / 1000) % 60).toString().padStart(2, '0');
+          setCountdown(`${hours}:${minutes}:${seconds}`);
+        } else {
+          setCountdown('00:00:00');
+        }
+      } else {
+        setCountdown('00:00:00');
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <div className="space-y-6 pb-16">
@@ -49,12 +97,28 @@ const Dashboard = () => {
         <motion.div variants={itemVariants}>
           <Card className="glass-card text-center p-6">
             <CardHeader className="p-0 mb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Next Bell In
+              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center justify-center gap-2">
+                <Clock className="h-4 w-4" />
+                Current Time
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <p className="text-6xl font-bold text-primary tracking-tight">00:45:12</p>
+              <p className="text-4xl font-bold text-primary tracking-tight">
+                {format(currentTime, 'HH:mm:ss')}
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div variants={itemVariants}>
+          <Card className="glass-card text-center p-6">
+            <CardHeader className="p-0 mb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {nextBell ? `Next Bell: ${nextBell.label}` : 'No More Bells Today'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <p className="text-6xl font-bold text-primary tracking-tight">{countdown}</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -83,18 +147,20 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              <div className="flex items-center gap-4">
-                <span className="font-semibold text-primary">09:00 AM</span>
-                <p>Morning Assembly</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="font-semibold text-primary">11:00 AM</span>
-                <p>Lecture End</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <span className="font-semibold text-primary">01:00 PM</span>
-                <p>Lunch Break</p>
-              </div>
+              {todaySchedule.map(bell => {
+                const bellDate = new Date();
+                const [hours, minutes] = bell.time.split(':').map(Number);
+                bellDate.setHours(hours, minutes);
+                
+                return (
+                  <div key={bell.time} className="flex items-center gap-4">
+                    <span className="font-semibold text-primary w-20">
+                      {format(bellDate, 'hh:mm a')}
+                    </span>
+                    <p>{bell.label}</p>
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
         </motion.div>

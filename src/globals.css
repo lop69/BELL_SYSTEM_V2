@@ -61,9 +61,25 @@
   }
 }
 
+@layer utilities {
+  @keyframes background-pan {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+}
+
 @layer components {
   .main-gradient {
     @apply bg-gradient-to-br from-gray-50 to-blue-100 dark:from-gray-900 dark:to-slate-950;
+    background-size: 200% 200%;
+    animation: background-pan 10s ease infinite;
   }
 
   .glass-card {
