@@ -2,9 +2,14 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { Home, Calendar, Wifi, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
+import Sidebar from "./Sidebar";
+import Header from "./Header";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Layout = () => {
   const location = useLocation();
+  const isMobile = useIsMobile();
+
   const navItems = [
     { to: "/app", icon: Home, label: "Dashboard" },
     { to: "/app/schedules", icon: Calendar, label: "Schedule" },
@@ -13,39 +18,45 @@ const Layout = () => {
   ];
 
   return (
-    <div className="min-h-screen main-gradient">
-      <AnimatePresence mode="wait">
-        <motion.main
-          key={location.pathname}
-          className="pb-24"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: 20 }}
-          transition={{ duration: 0.3, ease: "easeInOut" }}
-        >
-          <Outlet />
-        </motion.main>
-      </AnimatePresence>
-      <nav className="fixed bottom-4 left-4 right-4 h-20 glass-card">
-        <div className="flex justify-around h-full">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === "/app"}
-              className={({ isActive }) =>
-                cn(
-                  "flex flex-col items-center justify-center w-full text-sm transition-colors relative",
-                  isActive ? "text-cyan-500" : "text-muted-foreground hover:text-primary"
-                )
-              }
-            >
-              <item.icon className="h-6 w-6 mb-1" />
-              <span>{item.label}</span>
-            </NavLink>
-          ))}
-        </div>
-      </nav>
+    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+      <Sidebar />
+      <div className="flex flex-col">
+        <Header />
+        <AnimatePresence mode="wait">
+          <motion.main
+            key={location.pathname}
+            className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+          >
+            <Outlet />
+          </motion.main>
+        </AnimatePresence>
+      </div>
+      {isMobile && (
+        <nav className="fixed bottom-0 left-0 right-0 h-16 border-t bg-background/95 backdrop-blur-sm md:hidden">
+          <div className="flex justify-around h-full">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === "/app"}
+                className={({ isActive }) =>
+                  cn(
+                    "flex flex-col items-center justify-center w-full text-xs transition-colors",
+                    isActive ? "text-primary" : "text-muted-foreground hover:text-primary"
+                  )
+                }
+              >
+                <item.icon className="h-5 w-5 mb-1" />
+                <span>{item.label}</span>
+              </NavLink>
+            ))}
+          </div>
+        </nav>
+      )}
     </div>
   );
 };

@@ -1,53 +1,73 @@
 import { useAuth } from "@/contexts/AuthProvider";
-import { ChevronRight, User, Bell, LogOut, Palette } from "lucide-react";
+import { User, Bell, LogOut, Palette, Building } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { motion } from "framer-motion";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 
 const Settings = () => {
   const { signOut, user, isGuest } = useAuth();
 
-  const settingsItems = [
-    { icon: User, label: "Profile" },
-    { icon: Bell, label: "Notifications" },
-  ];
-
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-4xl font-bold text-primary">Settings</h1>
-      
-      <motion.div className="glass-card p-4" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
-        <p className="font-semibold text-lg">{isGuest ? "Guest User" : user?.email}</p>
-        <p className="text-sm text-muted-foreground">{isGuest ? "Viewing in demo mode" : "Standard Account"}</p>
-      </motion.div>
-
-      <motion.div className="glass-card" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
-        <ul className="divide-y divide-white/20">
-          {settingsItems.map((item) => (
-            <li key={item.label} className="flex items-center justify-between p-4 hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors">
-              <div className="flex items-center space-x-4">
-                <item.icon className="h-5 w-5 text-muted-foreground" />
-                <span className="font-medium">{item.label}</span>
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground" />
-            </li>
-          ))}
-        </ul>
-      </motion.div>
-
-      <motion.div className="glass-card p-4 flex items-center justify-between" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
-        <div className="flex items-center space-x-4">
-          <Palette className="h-5 w-5 text-muted-foreground" />
-          <span className="font-medium">Appearance</span>
-        </div>
-        <ThemeToggle />
-      </motion.div>
-
-      <motion.div className="glass-card" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
-        <div className="flex items-center space-x-4 p-4 cursor-pointer text-red-500 hover:bg-red-500/10 transition-colors" onClick={signOut}>
-          <LogOut className="h-5 w-5" />
-          <span className="font-medium">Sign Out</span>
-        </div>
-      </motion.div>
+    <div className="space-y-6 pb-16">
+      <div>
+        <h1 className="text-3xl font-bold">Settings</h1>
+        <p className="text-muted-foreground">Manage your application settings.</p>
+      </div>
+      <Accordion type="single" collapsible className="w-full" defaultValue="item-1">
+        <AccordionItem value="item-1">
+          <AccordionTrigger>
+            <div className="flex items-center gap-3">
+              <User className="h-5 w-5" /> Account
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="space-y-4 p-2">
+            <div className="rounded-lg border p-4">
+              <p className="font-semibold">{isGuest ? "Guest User" : user?.email}</p>
+              <p className="text-sm text-muted-foreground">
+                {isGuest ? "Viewing in demo mode" : "Standard Account"}
+              </p>
+            </div>
+            <Button variant="destructive" className="w-full" onClick={signOut}>
+              <LogOut className="mr-2 h-4 w-4" /> Sign Out
+            </Button>
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-2">
+          <AccordionTrigger>
+            <div className="flex items-center gap-3">
+              <Palette className="h-5 w-5" /> Appearance
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="p-4 flex items-center justify-between">
+            <Label htmlFor="theme-mode">Toggle Light/Dark Mode</Label>
+            <ThemeToggle />
+          </AccordionContent>
+        </AccordionItem>
+        <AccordionItem value="item-3">
+          <AccordionTrigger>
+            <div className="flex items-center gap-3">
+              <Bell className="h-5 w-5" /> Notifications
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="push-notifications">Push Notifications</Label>
+              <Switch id="push-notifications" />
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="email-summary">Email Summary</Label>
+              <Switch id="email-summary" checked />
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   );
 };
