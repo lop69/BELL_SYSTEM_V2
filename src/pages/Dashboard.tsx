@@ -1,8 +1,30 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Bell, Calendar, Plus } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+
+const containerVariants: Variants = {
+  hidden: { opacity: 1 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { y: 30, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      duration: 0.5,
+      ease: "easeOut",
+    },
+  },
+};
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -17,8 +39,13 @@ const Dashboard = () => {
         <p className="text-muted-foreground mt-1">Here's what's happening today.</p>
       </motion.div>
 
-      <div className="flex flex-col gap-6">
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}>
+      <motion.div 
+        className="flex flex-col gap-6"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        <motion.div variants={itemVariants}>
           <Card className="glass-card">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -32,7 +59,7 @@ const Dashboard = () => {
           </Card>
         </motion.div>
         
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}>
+        <motion.div variants={itemVariants}>
           <Card className="glass-card">
             <CardHeader>
               <CardTitle>
@@ -46,7 +73,7 @@ const Dashboard = () => {
           </Card>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }}>
+        <motion.div variants={itemVariants}>
           <Card className="glass-card">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -61,7 +88,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </motion.div>
-      </div>
+      </motion.div>
     </div>
   );
 };

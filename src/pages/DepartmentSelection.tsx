@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Computer, HardHat, Network, Cog, Zap, CircuitBoard, Pill } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, Variants } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 const departments = [
@@ -14,13 +14,34 @@ const departments = [
   { name: 'Pharmacy', icon: Pill },
 ];
 
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 100,
+    },
+  },
+};
+
 const DepartmentSelection = () => {
   const navigate = useNavigate();
   const [selected, setSelected] = useState<string | null>(null);
 
   const handleSelect = (departmentName: string) => {
     setSelected(departmentName);
-    // TODO: Save selected department to global state or local storage
     navigate('/login');
   };
 
@@ -36,26 +57,29 @@ const DepartmentSelection = () => {
         <p className="text-muted-foreground mt-2">Choose where you'll be operating.</p>
       </motion.div>
 
-      <div className="w-full max-w-md grid grid-cols-2 gap-6">
-        {departments.map((dept, index) => (
+      <motion.div
+        className="w-full max-w-md grid grid-cols-2 gap-6"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {departments.map((dept) => (
           <motion.div
             key={dept.name}
             className={cn(
               "glass-card p-6 flex flex-col items-center justify-center aspect-square cursor-pointer transition-all duration-300",
-              selected === dept.name ? 'ring-2 ring-cyan-400' : 'ring-0'
+              selected === dept.name ? 'ring-2 ring-cyan-400 shadow-cyan-500/50' : 'ring-0'
             )}
             onClick={() => handleSelect(dept.name)}
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.05, y: -5 }}
             whileTap={{ scale: 0.95 }}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.3, delay: index * 0.05 }}
+            variants={itemVariants}
           >
             <dept.icon className="h-12 w-12 text-primary mb-4" />
             <p className="font-semibold text-lg text-center text-primary">{dept.name}</p>
           </motion.div>
         ))}
-      </div>
+      </motion.div>
     </div>
   );
 };

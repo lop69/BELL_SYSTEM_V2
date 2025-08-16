@@ -22,7 +22,7 @@ const App = () => (
     <div className="w-full max-w-sm h-full max-h-[844px] bg-background rounded-3xl border-8 border-black shadow-2xl overflow-hidden relative">
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
-          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <ThemeProvider attribute="class" defaultTheme="light">
             <Toaster />
             <BrowserRouter>
               <AuthProvider>
