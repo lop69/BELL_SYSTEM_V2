@@ -5,10 +5,12 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthProvider";
 import { useEffect } from "react";
 import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { session } = useAuth();
+  const { session, loginAsGuest } = useAuth();
 
   useEffect(() => {
     if (session) {
@@ -35,6 +37,14 @@ const Login = () => {
             providers={[]}
             theme="light"
           />
+          <Separator className="my-6 bg-white/20" />
+          <Button
+            variant="outline"
+            className="w-full bg-white/20 border-white/30 hover:bg-white/30 text-primary"
+            onClick={loginAsGuest}
+          >
+            Continue as Guest (Demo)
+          </Button>
         </div>
       </motion.div>
     </div>

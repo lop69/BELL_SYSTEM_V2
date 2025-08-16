@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Atom, Briefcase, Palette, Computer } from 'lucide-react';
+import { Computer, HardHat, Network, Cog, Zap, CircuitBoard, Pill } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 const departments = [
-  { name: 'Science', icon: Atom },
-  { name: 'Commerce', icon: Briefcase },
-  { name: 'Arts', icon: Palette },
   { name: 'Computer', icon: Computer },
+  { name: 'Civil', icon: HardHat },
+  { name: 'IT', icon: Network },
+  { name: 'Mechanical', icon: Cog },
+  { name: 'Electrical', icon: Zap },
+  { name: 'Electronics', icon: CircuitBoard },
+  { name: 'Pharmacy', icon: Pill },
 ];
 
 const DepartmentSelection = () => {
@@ -33,7 +36,7 @@ const DepartmentSelection = () => {
         <p className="text-muted-foreground mt-2">Choose where you'll be operating.</p>
       </motion.div>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="w-full max-w-md grid grid-cols-2 gap-6">
         {departments.map((dept) => (
           <motion.div
             key={dept.name}
@@ -46,7 +49,7 @@ const DepartmentSelection = () => {
             whileTap={{ scale: 0.95 }}
           >
             <dept.icon className="h-12 w-12 text-primary mb-4" />
-            <p className="font-semibold text-lg text-primary">{dept.name}</p>
+            <p className="font-semibold text-lg text-center text-primary">{dept.name}</p>
           </motion.div>
         ))}
       </div>
