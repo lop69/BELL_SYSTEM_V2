@@ -1,8 +1,10 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { Home, Bell, Calendar, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 const Layout = () => {
+  const location = useLocation();
   const navItems = [
     { to: "/app", icon: Home, label: "Home" },
     { to: "/app/devices", icon: Bell, label: "Devices" },
@@ -12,9 +14,15 @@ const Layout = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-background">
-      <main className="flex-grow pb-20">
+      <motion.main
+        className="flex-grow pb-20"
+        key={location.pathname}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+      >
         <Outlet />
-      </main>
+      </motion.main>
       <nav className="fixed bottom-0 left-0 right-0 bg-background border-t md:max-w-md md:left-1/2 md:-translate-x-1/2 md:rounded-t-lg">
         <div className="flex justify-around">
           {navItems.map((item) => (
