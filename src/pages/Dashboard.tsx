@@ -103,7 +103,7 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <p className="text-4xl font-bold text-primary tracking-tight">
+              <p className="text-6xl font-bold text-primary tracking-tight">
                 {format(currentTime, 'HH:mm:ss')}
               </p>
             </CardContent>
