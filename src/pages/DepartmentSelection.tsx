@@ -19,7 +19,7 @@ const containerVariants: Variants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1,
+      staggerChildren: 0.08,
     },
   },
 };
@@ -31,7 +31,8 @@ const itemVariants: Variants = {
     opacity: 1,
     transition: {
       type: 'spring',
-      stiffness: 100,
+      stiffness: 120,
+      damping: 10,
     },
   },
 };
@@ -42,7 +43,10 @@ const DepartmentSelection = () => {
 
   const handleSelect = (departmentName: string) => {
     setSelected(departmentName);
-    navigate('/login');
+    // Add a small delay to show selection before navigating
+    setTimeout(() => {
+      navigate('/login');
+    }, 300);
   };
 
   return (
@@ -50,7 +54,7 @@ const DepartmentSelection = () => {
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
         className="text-center mb-12"
       >
         <h1 className="text-4xl font-bold text-primary">Select Your Department</h1>
@@ -68,7 +72,7 @@ const DepartmentSelection = () => {
             key={dept.name}
             className={cn(
               "glass-card p-6 flex flex-col items-center justify-center aspect-square cursor-pointer transition-all duration-300",
-              selected === dept.name ? 'ring-2 ring-cyan-400 shadow-cyan-500/50' : 'ring-0'
+              selected === dept.name ? 'ring-2 ring-sky-400 shadow-sky-500/50 scale-105' : 'ring-0'
             )}
             onClick={() => handleSelect(dept.name)}
             whileHover={{ scale: 1.05, y: -5 }}

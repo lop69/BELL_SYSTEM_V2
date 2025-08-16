@@ -1,18 +1,45 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Wifi, CheckCircle, XCircle, Loader } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Wifi, CheckCircle, XCircle, Loader, RefreshCw, WifiOff } from "lucide-react";
 import { motion } from "framer-motion";
+import { showLoading, dismissToast, showSuccess, showError } from "@/utils/toast";
+
+type Status = "connected" | "failed" | "pending" | "disconnected";
 
 const Connection = () => {
-  // Mock status
-  const status: "connected" | "failed" | "pending" = "pending";
+  const [status, setStatus] = useState<Status>("pending");
+
+  const handleConnect = () => {
+    const toastId = showLoading("Connecting to device...");
+    setStatus("pending");
+    setTimeout(() => {
+      dismissToast(toastId);
+      if (Math.random() > 0.3) {
+        setStatus("connected");
+        showSuccess("Device connected successfully!");
+      } else {
+        setStatus("failed");
+        showError("Failed to connect to device.");
+      }
+    }, 2000);
+  };
+
+  const handleDisconnect = () => {
+    setStatus("disconnected");
+    showSuccess("Device disconnected.");
+  }
 
   const StatusIndicator = () => {
-    if (status === 'connected') return <CheckCircle className="h-16 w-16 text-green-500" />;
-    if (status === 'failed') return <XCircle className="h-16 w-16 text-red-500" />;
-    return <Loader className="h-16 w-16 text-muted-foreground animate-spin" />;
+    switch (status) {
+      case 'connected': return <CheckCircle className="h-16 w-16 text-green-500" />;
+      case 'failed': return <XCircle className="h-16 w-16 text-red-500" />;
+      case 'pending': return <Loader className="h-16 w-16 text-muted-foreground animate-spin" />;
+      case 'disconnected': return <WifiOff className="h-16 w-16 text-muted-foreground" />;
+      default: return null;
+    }
   };
 
   return (
@@ -29,6 +56,8 @@ const Connection = () => {
           <CardContent className="flex flex-col items-center gap-4 p-0">
             <StatusIndicator />
             <p className="font-semibold capitalize">{status}</p>
+            {status === 'connected' && <CardDescription>IP: 192.168.1.101</CardDescription>}
+            
             <div className="space-y-4 w-full mt-4">
               <div>
                 <Label htmlFor="ssid" className="text-left block mb-2">WiFi SSID</Label>
@@ -38,7 +67,11 @@ const Connection = () => {
                 <Label htmlFor="password" className="text-left block mb-2">Password</Label>
                 <Input id="password" type="password" placeholder="Enter WiFi password" />
               </div>
-              <Button className="w-full gradient-button">Connect to Device</Button>
+              <Button className="w-full gradient-button" onClick={handleConnect}>Connect to Device</Button>
+              <div className="flex gap-2">
+                <Button variant="outline" className="w-full" onClick={handleConnect}><RefreshCw className="mr-2 h-4 w-4" /> Refresh</Button>
+                <Button variant="destructive" className="w-full" onClick={handleDisconnect}><WifiOff className="mr-2 h-4 w-4" /> Disconnect</Button>
+              </div>
             </div>
           </CardContent>
         </Card>
