@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bell, Calendar, Plus } from "lucide-react";
+import { Bell, Calendar, Plus, Edit } from "lucide-react";
 import { motion, Variants } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
@@ -9,13 +9,14 @@ const containerVariants: Variants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.15,
+      staggerChildren: 0.1,
+      delayChildren: 0.2,
     },
   },
 };
 
 const itemVariants: Variants = {
-  hidden: { y: 30, opacity: 0 },
+  hidden: { y: 20, opacity: 0 },
   visible: {
     y: 0,
     opacity: 1,
@@ -30,13 +31,13 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-16">
       <motion.div
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
       >
-        <h1 className="text-3xl font-bold text-primary">Good Morning, Science Dept.</h1>
-        <p className="text-muted-foreground mt-1">Here's what's happening today.</p>
+        <h1 className="text-3xl font-bold text-primary">Good Morning,</h1>
+        <p className="text-muted-foreground mt-1">Science Department</p>
       </motion.div>
 
       <motion.div 
@@ -46,29 +47,29 @@ const Dashboard = () => {
         animate="visible"
       >
         <motion.div variants={itemVariants}>
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Next Bell Countdown</span>
-                <Bell className="h-5 w-5 text-muted-foreground" />
+          <Card className="glass-card text-center p-6">
+            <CardHeader className="p-0 mb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                Next Bell In
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-6xl font-bold text-center text-primary tracking-widest">00:45:12</p>
+            <CardContent className="p-0">
+              <p className="text-6xl font-bold text-primary tracking-tight">00:45:12</p>
             </CardContent>
           </Card>
         </motion.div>
         
         <motion.div variants={itemVariants}>
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle>
-                <span>Quick Actions</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-4 sm:flex-row">
-              <Button className="w-full gradient-button" onClick={() => navigate('/app/schedules')}><Plus className="h-4 w-4 mr-2" /> Add Bell</Button>
-              <Button className="w-full" variant="outline" onClick={() => navigate('/app/schedules')}>Edit Schedule</Button>
+          <Card className="glass-card p-4">
+            <CardContent className="p-2 flex justify-around">
+              <Button variant="ghost" className="flex flex-col h-auto" onClick={() => navigate('/app/schedules')}>
+                <Plus className="h-6 w-6 mb-1 text-sky-500" />
+                <span className="text-xs">Add Bell</span>
+              </Button>
+              <Button variant="ghost" className="flex flex-col h-auto" onClick={() => navigate('/app/schedules')}>
+                <Edit className="h-6 w-6 mb-1 text-indigo-500" />
+                <span className="text-xs">Edit Schedule</span>
+              </Button>
             </CardContent>
           </Card>
         </motion.div>
@@ -76,15 +77,24 @@ const Dashboard = () => {
         <motion.div variants={itemVariants}>
           <Card className="glass-card">
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
+              <CardTitle className="flex items-center justify-between text-lg">
                 <span>Today's Schedule</span>
                 <Calendar className="h-5 w-5 text-muted-foreground" />
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <p>09:00 AM - Morning Assembly</p>
-              <p>11:00 AM - Lecture End</p>
-              <p>01:00 PM - Lunch Break</p>
+            <CardContent className="space-y-3 text-sm">
+              <div className="flex items-center gap-4">
+                <span className="font-semibold text-primary">09:00 AM</span>
+                <p>Morning Assembly</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="font-semibold text-primary">11:00 AM</span>
+                <p>Lecture End</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="font-semibold text-primary">01:00 PM</span>
+                <p>Lunch Break</p>
+              </div>
             </CardContent>
           </Card>
         </motion.div>

@@ -21,15 +21,15 @@ const Layout = () => {
         <motion.main
           key={location.pathname}
           className="flex-1 flex-col gap-4 p-4"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={{ duration: 0.25, ease: "easeInOut" }}
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -15 }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
         >
           <Outlet />
         </motion.main>
       </AnimatePresence>
-      <nav className="sticky bottom-0 left-0 right-0 h-16 border-t bg-background/95 backdrop-blur-sm">
+      <nav className="sticky bottom-0 left-0 right-0 h-16 border-t bg-background/80 backdrop-blur-lg">
         <div className="flex justify-around h-full">
           {navItems.map((item) => (
             <NavLink
@@ -38,15 +38,25 @@ const Layout = () => {
               end={item.to === "/app"}
               className={({ isActive }) =>
                 cn(
-                  "flex flex-col items-center justify-center w-full text-xs transition-colors",
+                  "flex flex-col items-center justify-center w-full text-xs transition-colors relative",
                   isActive
                     ? "text-primary"
                     : "text-muted-foreground hover:text-primary"
                 )
               }
             >
-              <item.icon className="h-5 w-5 mb-1" />
-              <span>{item.label}</span>
+              {({ isActive }) => (
+                <>
+                  <item.icon className="h-5 w-5 mb-1" />
+                  <span>{item.label}</span>
+                  {isActive && (
+                    <motion.div
+                      className="absolute bottom-1 h-1 w-1 bg-primary rounded-full"
+                      layoutId="active-indicator"
+                    />
+                  )}
+                </>
+              )}
             </NavLink>
           ))}
         </div>
