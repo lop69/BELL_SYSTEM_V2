@@ -16,26 +16,26 @@ const Connection = () => {
   };
 
   return (
-    <div className="p-6 space-y-8">
-      <h1 className="text-4xl font-bold text-primary">Device Connection</h1>
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold text-primary">Device Connection</h1>
       <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
-        <Card className="glass-card text-center p-8">
-          <CardHeader>
+        <Card className="glass-card text-center p-6">
+          <CardHeader className="p-0 mb-4">
             <CardTitle className="flex items-center justify-center gap-2">
               <Wifi />
               <span>ESP8266 Status</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col items-center gap-4">
+          <CardContent className="flex flex-col items-center gap-4 p-0">
             <StatusIndicator />
             <p className="font-semibold capitalize">{status}</p>
-            <div className="space-y-4 w-full mt-6">
+            <div className="space-y-4 w-full mt-4">
               <div>
-                <Label htmlFor="ssid">WiFi SSID</Label>
+                <Label htmlFor="ssid" className="text-left block mb-2">WiFi SSID</Label>
                 <Input id="ssid" placeholder="Enter your WiFi name" />
               </div>
               <div>
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" className="text-left block mb-2">Password</Label>
                 <Input id="password" type="password" placeholder="Enter WiFi password" />
               </div>
               <Button className="w-full gradient-button">Connect to Device</Button>
