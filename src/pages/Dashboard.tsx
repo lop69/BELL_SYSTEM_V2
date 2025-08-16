@@ -118,7 +118,7 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <p className="text-6xl font-bold text-primary tracking-tight">{countdown}</p>
+              <p className="text-4xl font-bold text-primary tracking-tight">{countdown}</p>
             </CardContent>
           </Card>
         </motion.div>
