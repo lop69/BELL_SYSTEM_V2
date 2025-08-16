@@ -44,14 +44,14 @@ const Login = () => {
   }, [session, navigate]);
 
   return (
-    <div className="min-h-screen main-gradient p-4 flex flex-col items-center justify-center overflow-hidden">
+    <div className="min-h-screen auth-gradient p-4 flex flex-col items-center justify-center overflow-hidden dark">
       <motion.div
         className="w-full max-w-sm"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
       >
-        <div className="glass-card p-8">
+        <div className="bg-black/40 backdrop-blur-2xl border border-white/15 rounded-3xl shadow-2xl shadow-indigo-500/20 p-8">
           <motion.div variants={itemVariants} className="text-center mb-8">
             <div className="inline-block p-4 bg-primary/10 rounded-full mb-4">
               <BellRing className="h-8 w-8 text-primary" />
@@ -68,27 +68,27 @@ const Login = () => {
                 extend: false,
                 className: {
                   button: 'gradient-button !rounded-lg !py-2.5',
-                  input: 'bg-white/50 dark:bg-black/20 border-gray-300/50 dark:border-gray-700/50 rounded-lg',
+                  input: 'bg-black/20 border-gray-700/50 rounded-lg',
                   label: 'text-muted-foreground',
-                  anchor: 'text-primary hover:text-sky-600',
+                  anchor: 'text-primary hover:text-sky-500',
                   message: 'text-red-500 text-sm',
-                  divider: 'bg-gray-300/50'
+                  divider: 'bg-gray-700/50'
                 }
               }}
               providers={['google']}
-              theme="light"
+              theme="dark"
             />
           </motion.div>
 
           <motion.div variants={itemVariants} className="relative my-6">
-            <Separator className="bg-gray-300/50" />
-            <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/70 dark:bg-gray-950/50 px-2 text-xs text-muted-foreground backdrop-blur-sm">OR</span>
+            <Separator className="bg-gray-700/50" />
+            <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-900/80 px-2 text-xs text-muted-foreground backdrop-blur-sm">OR</span>
           </motion.div>
 
           <motion.div variants={itemVariants}>
             <Button
               variant="outline"
-              className="w-full bg-white/50 border-gray-300/50 hover:bg-white/80 text-primary rounded-lg transition-transform transform hover:scale-105"
+              className="w-full bg-white/10 border-white/20 hover:bg-white/20 text-primary rounded-lg transition-transform transform hover:scale-105"
               onClick={loginAsGuest}
             >
               Continue as Guest (Demo)
