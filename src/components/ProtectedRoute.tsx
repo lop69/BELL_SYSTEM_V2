@@ -1,9 +1,10 @@
 import { useAuth } from "@/contexts/AuthProvider";
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const ProtectedRoute = () => {
-  const { user, loading, isGuest } = useAuth();
+  const { user, loading, isGuest, profile } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -17,6 +18,16 @@ const ProtectedRoute = () => {
 
   if (!user && !isGuest) {
     return <Navigate to="/login" replace />;
+  }
+
+  // If user is logged in, but profile is incomplete, and they are NOT on the complete-profile page
+  if (user && profile && !profile.first_name && location.pathname !== '/complete-profile') {
+    return <Navigate to="/complete-profile" replace />;
+  }
+
+  // If user is logged in, profile is complete, but they are trying to access complete-profile page
+  if (user && profile && profile.first_name && location.pathname === '/complete-profile') {
+    return <Navigate to="/app" replace />;
   }
 
   return <Outlet />;

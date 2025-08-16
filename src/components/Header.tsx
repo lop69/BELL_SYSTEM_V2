@@ -12,8 +12,10 @@ import { useAuth } from "@/contexts/AuthProvider";
 import { useNavigate } from "react-router-dom";
 
 const Header = () => {
-  const { user, signOut, isGuest } = useAuth();
+  const { user, signOut, isGuest, profile } = useAuth();
   const navigate = useNavigate();
+
+  const displayName = profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}`.trim() : user?.email;
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-lg px-4">
@@ -33,7 +35,7 @@ const Header = () => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>{isGuest ? "Guest Mode" : user?.email}</DropdownMenuLabel>
+            <DropdownMenuLabel>{isGuest ? "Guest Mode" : displayName}</DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => navigate('/app/settings')}>Profile</DropdownMenuItem>
             <DropdownMenuItem>Support</DropdownMenuItem>

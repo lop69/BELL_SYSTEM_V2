@@ -25,26 +25,19 @@ import { supabase } from "@/lib/supabase";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 
 const Settings = () => {
-  const { signOut, user, isGuest } = useAuth();
+  const { signOut, user, isGuest, profile: authProfile } = useAuth();
   const [profile, setProfile] = useState({ first_name: "", last_name: "" });
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [notifications, setNotifications] = useState({ push: false, email: true });
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      if (user) {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("first_name, last_name")
-          .eq("id", user.id)
-          .single();
-        if (data) {
-          setProfile(data);
-        }
-      }
-    };
-    fetchProfile();
-  }, [user]);
+    if (authProfile) {
+      setProfile({
+        first_name: authProfile.first_name || "",
+        last_name: authProfile.last_name || "",
+      });
+    }
+  }, [authProfile]);
 
   const handleProfileUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -62,8 +55,11 @@ const Settings = () => {
     } else {
       showSuccess("Profile updated successfully!");
       setIsProfileDialogOpen(false);
+      // The profile in AuthContext will update automatically on the next render cycle
     }
   };
+
+  const displayName = isGuest ? "Guest User" : `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || user?.email;
 
   return (
     <div className="space-y-6 pb-16">
@@ -80,7 +76,7 @@ const Settings = () => {
           </AccordionTrigger>
           <AccordionContent className="space-y-4 p-2">
             <div className="rounded-lg border p-4">
-              <p className="font-semibold">{isGuest ? "Guest User" : `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || user?.email}</p>
+              <p className="font-semibold">{displayName}</p>
               <p className="text-sm text-muted-foreground">
                 {isGuest ? "Viewing in demo mode" : "Standard Account"}
               </p>

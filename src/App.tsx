@@ -14,6 +14,7 @@ import SplashScreen from "./pages/SplashScreen";
 import DepartmentSelection from "./pages/DepartmentSelection";
 import { ThemeProvider } from "./contexts/ThemeProvider";
 import Connection from "./pages/Connection";
+import CompleteProfile from "./pages/CompleteProfile";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
                     />
                     <Route path="/login" element={<Login />} />
                     <Route element={<ProtectedRoute />}>
+                      <Route path="/complete-profile" element={<CompleteProfile />} />
                       <Route path="/app" element={<Layout />}>
                         <Route index element={<Dashboard />} />
                         <Route path="schedules" element={<Schedules />} />
