@@ -1,112 +1,64 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Activity, Bell, Calendar, CheckCircle } from "lucide-react";
-import { motion, Variants } from "framer-motion";
-
-const containerVariants: Variants = {
-  hidden: { opacity: 1 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-    },
-  },
-};
-
-const itemVariants: Variants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: {
-      duration: 0.5,
-      ease: "easeOut",
-    },
-  },
-};
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Bell, Calendar, Plus, Wifi } from "lucide-react";
+import { motion } from "framer-motion";
 
 const Dashboard = () => {
   return (
-    <div className="p-4 md:p-8 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Home</h1>
-        <p className="text-muted-foreground mt-1">
-          Welcome back! Here's your system overview.
-        </p>
+    <div className="p-6 space-y-8">
+      <motion.div
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+      >
+        <h1 className="text-4xl font-bold text-primary">Good Morning, Science Dept.</h1>
+        <p className="text-muted-foreground mt-1">Here's what's happening today.</p>
+      </motion.div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}>
+          <Card className="glass-card">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Next Bell Countdown</span>
+                <Bell className="h-5 w-5 text-muted-foreground" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-6xl font-bold text-center text-primary tracking-widest">00:45:12</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+        
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}>
+          <Card className="glass-card">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Quick Actions</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex gap-4">
+              <Button className="w-full gradient-button"><Plus className="h-4 w-4 mr-2" /> Add Bell</Button>
+              <Button className="w-full" variant="outline">Edit Schedule</Button>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div className="md:col-span-2" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.4 }}>
+          <Card className="glass-card">
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Today's Schedule</span>
+                <Calendar className="h-5 w-5 text-muted-foreground" />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <p>09:00 AM - Morning Assembly</p>
+              <p>11:00 AM - Lecture End</p>
+              <p>01:00 PM - Lunch Break</p>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
-      <motion.div
-        className="grid gap-4 md:grid-cols-2"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        <motion.div variants={itemVariants}>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Activity className="h-5 w-5" />
-                <span>System Status</span>
-              </CardTitle>
-              <CardDescription>Overall health of the bell system</CardDescription>
-            </CardHeader>
-            <CardContent className="flex items-center space-x-2">
-              <CheckCircle className="h-8 w-8 text-green-500" />
-              <div>
-                <p className="text-lg font-semibold">All Systems Operational</p>
-                <p className="text-sm text-muted-foreground">No issues detected.</p>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-        <motion.div variants={itemVariants}>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Bell className="h-5 w-5" />
-                <span>Active Devices</span>
-              </CardTitle>
-              <CardDescription>Bells currently online</CardDescription>
-            </CardHeader>
-            <CardContent className="flex items-baseline space-x-1">
-              <p className="text-3xl font-bold">3</p>
-              <p className="text-muted-foreground">/ 4 online</p>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </motion.div>
-      <motion.div
-        variants={itemVariants}
-        initial="hidden"
-        animate="visible"
-        transition={{ delay: 0.3 }}
-      >
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Calendar className="h-5 w-5" />
-              <span>Upcoming Schedule</span>
-            </CardTitle>
-            <CardDescription>Next scheduled ring</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-semibold">Class Change Bell</p>
-                <p className="text-sm text-muted-foreground">Today at 10:50 AM</p>
-              </div>
-              <div className="text-right">
-                <p className="font-semibold">Main Campus</p>
-                <p className="text-sm text-muted-foreground">All Bells</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
     </div>
   );
 };

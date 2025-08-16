@@ -16,33 +16,38 @@ const SplashScreen = () => {
 
   return (
     <motion.div
-      className="flex flex-col items-center justify-center min-h-screen bg-background"
+      className="flex flex-col items-center justify-center min-h-screen main-gradient overflow-hidden"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
       transition={{ duration: 1.5 }}
     >
       <motion.div
+        className="relative"
         initial={{ scale: 0.5, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.8, delay: 0.2, type: 'spring', stiffness: 120 }}
+        transition={{ duration: 1, delay: 0.2, type: 'spring', stiffness: 100 }}
       >
-        <BellRing className="h-24 w-24 text-primary" />
+        <div className="absolute -inset-2 bg-gradient-to-r from-cyan-400 to-purple-600 rounded-full blur-xl opacity-75 animate-pulse" />
+        <div className="relative bg-white/80 dark:bg-black/80 p-6 rounded-full">
+          <BellRing className="h-24 w-24 text-primary" />
+        </div>
       </motion.div>
       <motion.h1
-        className="text-4xl font-bold mt-4 text-primary"
+        className="text-4xl font-bold mt-8 text-primary"
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, delay: 0.5 }}
+        transition={{ duration: 0.8, delay: 0.8 }}
       >
-        Bell Control
+        Smart Bell Scheduler
       </motion.h1>
       <motion.p
         className="text-muted-foreground mt-2"
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, delay: 0.7 }}
+        transition={{ duration: 0.8, delay: 1 }}
       >
-        Loading your experience...
+        Simplifying Campus Time.
       </motion.p>
     </motion.div>
   );

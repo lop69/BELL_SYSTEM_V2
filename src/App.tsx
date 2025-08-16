@@ -1,11 +1,9 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
-import Devices from "./pages/Devices";
 import Schedules from "./pages/Schedules";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -15,6 +13,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import SplashScreen from "./pages/SplashScreen";
 import DepartmentSelection from "./pages/DepartmentSelection";
 import { ThemeProvider } from "./contexts/ThemeProvider";
+import Connection from "./pages/Connection";
 
 const queryClient = new QueryClient();
 
@@ -23,7 +22,6 @@ const App = () => (
     <TooltipProvider>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <Toaster />
-        <Sonner />
         <BrowserRouter>
           <AuthProvider>
             <Routes>
@@ -33,8 +31,8 @@ const App = () => (
               <Route element={<ProtectedRoute />}>
                 <Route path="/app" element={<Layout />}>
                   <Route index element={<Dashboard />} />
-                  <Route path="devices" element={<Devices />} />
                   <Route path="schedules" element={<Schedules />} />
+                  <Route path="connection" element={<Connection />} />
                   <Route path="settings" element={<Settings />} />
                 </Route>
               </Route>
