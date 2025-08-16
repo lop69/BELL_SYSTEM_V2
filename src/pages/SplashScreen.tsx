@@ -9,47 +9,77 @@ const SplashScreen = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       navigate('/select-department');
-    }, 5000); // 5 seconds
+    }, 4000); // 4 seconds for the new animation
 
     return () => clearTimeout(timer);
   }, [navigate]);
 
   return (
-    <motion.div
-      className="flex flex-col items-center justify-center min-h-screen main-gradient overflow-hidden"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 1.5 }}
-    >
+    <div className="flex flex-col items-center justify-center min-h-screen main-gradient overflow-hidden">
       <motion.div
-        className="relative"
-        initial={{ scale: 0, opacity: 0, rotate: -90 }}
-        animate={{ scale: 1, opacity: 1, rotate: 0 }}
-        transition={{ duration: 1.2, delay: 0.2, type: 'spring', stiffness: 80 }}
+        initial={{ opacity: 0, scale: 0.5 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.8, delay: 0.2, ease: [0, 0.71, 0.2, 1.01] }}
+        className="relative flex items-center justify-center"
       >
-        <div className="absolute -inset-3 bg-gradient-to-r from-cyan-400 to-purple-600 rounded-full blur-2xl opacity-75 animate-pulse" />
-        <div className="relative bg-white/80 dark:bg-black/80 p-6 rounded-full shadow-lg">
-          <BellRing className="h-24 w-24 text-primary" />
-        </div>
+        {/* Radiating circles */}
+        {[...Array(3)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute rounded-full border border-sky-300/50"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: [0, 1, 0], scale: 1.5 }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              repeatType: 'loop',
+              delay: i * 0.4 + 0.5,
+              ease: 'easeInOut',
+            }}
+            style={{
+              width: `${8 + i * 4}rem`,
+              height: `${8 + i * 4}rem`,
+            }}
+          />
+        ))}
+        
+        {/* Bell Icon with ringing animation */}
+        <motion.div
+          className="relative bg-white/80 dark:bg-black/80 p-6 rounded-full shadow-lg"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 0.8, delay: 0.5, type: 'spring', stiffness: 120 }}
+        >
+          <motion.div
+            animate={{ rotate: [0, -15, 10, -10, 5, 0] }}
+            transition={{ duration: 1.5, delay: 1.5, ease: 'easeInOut' }}
+          >
+            <BellRing className="h-24 w-24 text-primary" />
+          </motion.div>
+        </motion.div>
       </motion.div>
-      <motion.h1
-        className="text-4xl font-bold mt-8 text-primary"
-        initial={{ y: 50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, delay: 0.8, type: 'spring' }}
-      >
-        Smart Bell Scheduler
-      </motion.h1>
-      <motion.p
-        className="text-muted-foreground mt-2"
-        initial={{ y: 50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.8, delay: 1 }}
-      >
-        Simplifying Campus Time.
-      </motion.p>
-    </motion.div>
+
+      <div className="mt-8 text-center overflow-hidden">
+        <motion.h1
+          className="text-4xl font-bold text-primary"
+          initial={{ y: "100%" }}
+          animate={{ y: 0 }}
+          transition={{ duration: 0.8, delay: 1.8, ease: 'circOut' }}
+        >
+          Smart Bell Scheduler
+        </motion.h1>
+      </div>
+      <div className="mt-2 text-center overflow-hidden">
+        <motion.p
+          className="text-muted-foreground"
+          initial={{ y: "100%" }}
+          animate={{ y: 0 }}
+          transition={{ duration: 0.8, delay: 2.0, ease: 'circOut' }}
+        >
+          Simplifying Campus Time.
+        </motion.p>
+      </div>
+    </div>
   );
 };
 
