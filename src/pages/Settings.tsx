@@ -100,11 +100,11 @@ const Settings = () => {
                   <form onSubmit={handleProfileUpdate} className="space-y-4">
                     <div>
                       <Label htmlFor="firstName">First Name</Label>
-                      <Input id="firstName" value={profile.first_name} onChange={(e) => setProfile({...profile, first_name: e.target.value})} />
+                      <Input id="firstName" value={profile.first_name} onChange={(e) => setProfile({...profile, first_name: e.target.value})} className="bg-white/50 dark:bg-black/20 border-gray-300/50 dark:border-gray-700/50" />
                     </div>
                     <div>
                       <Label htmlFor="lastName">Last Name</Label>
-                      <Input id="lastName" value={profile.last_name} onChange={(e) => setProfile({...profile, last_name: e.target.value})} />
+                      <Input id="lastName" value={profile.last_name} onChange={(e) => setProfile({...profile, last_name: e.target.value})} className="bg-white/50 dark:bg-black/20 border-gray-300/50 dark:border-gray-700/50" />
                     </div>
                     <DialogFooter>
                       <Button type="submit" className="gradient-button">Save Changes</Button>

@@ -140,11 +140,11 @@ const Schedules = () => {
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="time" className="text-right">Time</Label>
-              <Input id="time" name="time" type="time" required className="col-span-3" />
+              <Input id="time" name="time" type="time" required className="col-span-3 bg-white/50 dark:bg-black/20 border-gray-300/50 dark:border-gray-700/50" />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="label" className="text-right">Label</Label>
-              <Input id="label" name="label" placeholder="e.g., Lunch Break" required className="col-span-3" />
+              <Input id="label" name="label" placeholder="e.g., Lunch Break" required className="col-span-3 bg-white/50 dark:bg-black/20 border-gray-300/50 dark:border-gray-700/50" />
             </div>
             <div>
               <Label className="mb-3 block text-center">Repeat on</Label>

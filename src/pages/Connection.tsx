@@ -61,11 +61,11 @@ const Connection = () => {
             <div className="space-y-4 w-full mt-4">
               <div>
                 <Label htmlFor="ssid" className="text-left block mb-2">WiFi SSID</Label>
-                <Input id="ssid" placeholder="Enter your WiFi name" />
+                <Input id="ssid" placeholder="Enter your WiFi name" className="bg-white/50 dark:bg-black/20 border-gray-300/50 dark:border-gray-700/50" />
               </div>
               <div>
                 <Label htmlFor="password" className="text-left block mb-2">Password</Label>
-                <Input id="password" type="password" placeholder="Enter WiFi password" />
+                <Input id="password" type="password" placeholder="Enter WiFi password" className="bg-white/50 dark:bg-black/20 border-gray-300/50 dark:border-gray-700/50" />
               </div>
               <Button className="w-full gradient-button" onClick={handleConnect}>Connect to Device</Button>
               <div className="flex gap-2">

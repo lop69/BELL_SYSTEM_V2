@@ -29,7 +29,7 @@ const Layout = () => {
           <Outlet />
         </motion.main>
       </AnimatePresence>
-      <nav className="h-16 border-t bg-background/80 backdrop-blur-lg flex-shrink-0">
+      <nav className="h-16 border-t border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/20 backdrop-blur-2xl flex-shrink-0">
         <div className="flex justify-around h-full">
           {navItems.map((item) => (
             <NavLink
