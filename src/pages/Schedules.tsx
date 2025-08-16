@@ -78,7 +78,7 @@ const Schedules = () => {
 
       <Dialog>
         <DialogTrigger asChild>
-          <Button className="gradient-button fixed bottom-20 right-6 h-16 w-16 rounded-full shadow-lg md:bottom-8 md:right-8">
+          <Button className="gradient-button fixed bottom-20 right-6 h-16 w-16 rounded-full shadow-lg">
             <Plus className="h-8 w-8" />
           </Button>
         </DialogTrigger>
