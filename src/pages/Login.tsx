@@ -1,4 +1,5 @@
 import { Auth } from "@supabase/auth-ui-react";
+import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthProvider";
@@ -37,6 +38,7 @@ const Login = () => {
           <Auth
             supabaseClient={supabase}
             appearance={{
+              theme: ThemeSupa,
               extend: false,
               className: {
                 button: 'gradient-button !rounded-lg !py-2.5',
