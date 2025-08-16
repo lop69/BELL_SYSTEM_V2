@@ -1,13 +1,13 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, Bell, Calendar, Settings } from "lucide-react";
+import { Home, Bell, Calendar, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const Layout = () => {
   const navItems = [
-    { to: "/", icon: LayoutDashboard, label: "Dashboard" },
-    { to: "/bells", icon: Bell, label: "Bells" },
-    { to: "/schedules", icon: Calendar, label: "Schedules" },
-    { to: "/settings", icon: Settings, label: "Settings" },
+    { to: "/app", icon: Home, label: "Home" },
+    { to: "/app/devices", icon: Bell, label: "Devices" },
+    { to: "/app/schedules", icon: Calendar, label: "Schedules" },
+    { to: "/app/settings", icon: Settings, label: "Settings" },
   ];
 
   return (
@@ -21,7 +21,7 @@ const Layout = () => {
             <NavLink
               key={item.to}
               to={item.to}
-              end
+              end={item.to === "/app"}
               className={({ isActive }) =>
                 cn(
                   "flex flex-col items-center justify-center w-full pt-2 pb-1 text-sm transition-colors",

@@ -11,14 +11,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 
 const Login = () => {
   const navigate = useNavigate();
-  const { session } = useAuth();
+  const { session, loginAsGuest } = useAuth();
 
   useEffect(() => {
     if (session) {
-      navigate("/");
+      navigate("/app");
     }
   }, [session, navigate]);
 
@@ -38,6 +40,10 @@ const Login = () => {
             providers={[]}
             theme="light"
           />
+          <Separator className="my-4" />
+          <Button variant="outline" className="w-full" onClick={loginAsGuest}>
+            Continue as Guest
+          </Button>
         </CardContent>
       </Card>
     </div>

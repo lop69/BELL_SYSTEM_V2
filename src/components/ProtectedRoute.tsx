@@ -3,7 +3,7 @@ import { Navigate, Outlet } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const ProtectedRoute = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, isGuest } = useAuth();
 
   if (loading) {
     return (
@@ -15,7 +15,7 @@ const ProtectedRoute = () => {
     );
   }
 
-  if (!user) {
+  if (!user && !isGuest) {
     return <Navigate to="/login" replace />;
   }
 
