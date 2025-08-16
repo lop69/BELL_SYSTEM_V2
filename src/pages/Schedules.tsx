@@ -72,7 +72,7 @@ const Schedules = () => {
   };
 
   return (
-    <div className="pb-16">
+    <div>
       <Tabs defaultValue="1st Year" className="space-y-4">
         <div className="flex items-center">
           <TabsList>
@@ -153,6 +153,7 @@ const Schedules = () => {
                   <div key={day} className="flex flex-col items-center gap-1">
                     <Checkbox id={`day-${day}`} />
                     <Label htmlFor={`day-${day}`} className="text-xs">{day}</Label>
+
                   </div>
                 ))}
               </div>
