@@ -18,10 +18,10 @@ const DepartmentSelection = () => {
   const navigate = useNavigate();
   const [selected, setSelected] = useState<string | null>(null);
 
-  const handleContinue = () => {
-    if (selected) {
-      navigate('/login');
-    }
+  const handleSelect = (departmentName: string) => {
+    setSelected(departmentName);
+    // TODO: Save selected department to global state or local storage
+    navigate('/login');
   };
 
   return (
@@ -37,33 +37,25 @@ const DepartmentSelection = () => {
       </motion.div>
 
       <div className="w-full max-w-md grid grid-cols-2 gap-6">
-        {departments.map((dept) => (
+        {departments.map((dept, index) => (
           <motion.div
             key={dept.name}
             className={cn(
               "glass-card p-6 flex flex-col items-center justify-center aspect-square cursor-pointer transition-all duration-300",
               selected === dept.name ? 'ring-2 ring-cyan-400' : 'ring-0'
             )}
-            onClick={() => setSelected(dept.name)}
+            onClick={() => handleSelect(dept.name)}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3, delay: index * 0.05 }}
           >
             <dept.icon className="h-12 w-12 text-primary mb-4" />
             <p className="font-semibold text-lg text-center text-primary">{dept.name}</p>
           </motion.div>
         ))}
       </div>
-
-      <motion.button
-        className="gradient-button mt-12 w-full max-w-xs"
-        onClick={handleContinue}
-        disabled={!selected}
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.3 }}
-      >
-        Continue
-      </motion.button>
     </div>
   );
 };

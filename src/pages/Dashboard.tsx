@@ -2,8 +2,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Bell, Calendar, Plus } from "lucide-react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="space-y-6">
       <motion.div
@@ -37,8 +40,8 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4 sm:flex-row">
-              <Button className="w-full gradient-button"><Plus className="h-4 w-4 mr-2" /> Add Bell</Button>
-              <Button className="w-full" variant="outline">Edit Schedule</Button>
+              <Button className="w-full gradient-button" onClick={() => navigate('/app/schedules')}><Plus className="h-4 w-4 mr-2" /> Add Bell</Button>
+              <Button className="w-full" variant="outline" onClick={() => navigate('/app/schedules')}>Edit Schedule</Button>
             </CardContent>
           </Card>
         </motion.div>

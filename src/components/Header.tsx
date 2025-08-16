@@ -9,9 +9,11 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "./ui/button";
 import { useAuth } from "@/contexts/AuthProvider";
+import { useNavigate } from "react-router-dom";
 
 const Header = () => {
   const { user, signOut, isGuest } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 backdrop-blur-lg px-4">
@@ -33,7 +35,7 @@ const Header = () => {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>{isGuest ? "Guest Mode" : user?.email}</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/app/settings')}>Profile</DropdownMenuItem>
             <DropdownMenuItem>Support</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={signOut} className="text-red-500">

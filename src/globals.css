@@ -25,7 +25,7 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
-    --radius: 1.5rem; /* Increased border radius for a softer look */
+    --radius: 1rem; /* Adjusted for a more Apple-like feel */
   }
 
   .dark {
