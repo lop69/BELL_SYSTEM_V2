@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bell, Calendar, Plus, Edit } from "lucide-react";
+import { Calendar, Plus, Edit } from "lucide-react";
 import { motion, Variants } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
