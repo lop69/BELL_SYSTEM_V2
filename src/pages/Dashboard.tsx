@@ -134,22 +134,20 @@ const Dashboard = () => {
     if (!user) return;
     const toastId = showLoading("Sending test signal...");
     try {
-      const { error: activateError } = await supabase
+      const { error } = await supabase
         .from("test_bells")
-        .upsert({ user_id: user.id, is_active: true }, { onConflict: 'user_id' });
-      if (activateError) throw activateError;
+        .upsert({ 
+          user_id: user.id, 
+          is_active: true,
+          triggered_at: new Date().toISOString() 
+        }, { onConflict: 'user_id' });
 
-      showSuccess("Test signal sent! The bell should ring for 30 seconds.");
+      if (error) throw error;
 
-      setTimeout(async () => {
-        await supabase
-          .from("test_bells")
-          .update({ is_active: false })
-          .eq("user_id", user.id);
-      }, 35000);
+      showSuccess("Test signal sent! The bell should ring for ~30 seconds.");
 
     } catch (error) {
-      showError("Failed to send test signal.");
+      showError("Failed to send test signal. Please ensure the device is configured.");
     } finally {
       dismissToast(toastId);
     }
