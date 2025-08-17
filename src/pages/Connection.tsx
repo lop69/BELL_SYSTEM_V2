@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wifi, CheckCircle, XCircle, Loader, AlertTriangle, WifiOff, KeyRound, Tag, Info, BellRing, Signal, HelpCircle } from "lucide-react";
+import { Wifi, CheckCircle, XCircle, Loader, AlertTriangle, WifiOff, KeyRound, Tag, Info, BellRing, Signal, HelpCircle, Copy } from "lucide-react";
 import { motion } from "framer-motion";
 import { showLoading, dismissToast, showSuccess, showError } from "@/utils/toast";
 import { useAuth } from "@/contexts/AuthProvider";
@@ -122,6 +122,11 @@ const Connection = () => {
     }
   };
 
+  const handleCopyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    showSuccess("Schedule ID copied to clipboard!");
+  };
+
   const StatusIndicator = () => {
     switch (status) {
       case 'connected': return <CheckCircle className="h-12 w-12 text-green-500" />;
@@ -168,7 +173,24 @@ const Connection = () => {
             <CardDescription>Enter your main WiFi details here. This information will be sent to the device.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div><Label htmlFor="schedule-select">Assign to Year/Schedule</Label><Select value={selectedSchedule} onValueChange={setSelectedSchedule}><SelectTrigger><SelectValue placeholder="Select a schedule..." /></SelectTrigger><SelectContent>{schedules.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select></div>
+            <div>
+              <Label htmlFor="schedule-select">Assign to Year/Schedule</Label>
+              <Select value={selectedSchedule} onValueChange={setSelectedSchedule}>
+                <SelectTrigger><SelectValue placeholder="Select a schedule..." /></SelectTrigger>
+                <SelectContent>{schedules.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+              </Select>
+              {selectedSchedule && (
+                <div className="mt-2 p-3 rounded-lg bg-muted/50 border flex items-center justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-muted-foreground">Selected Schedule ID (for firmware)</p>
+                    <p className="font-mono text-sm break-all">{selectedSchedule}</p>
+                  </div>
+                  <Button variant="ghost" size="icon" className="flex-shrink-0" onClick={() => handleCopyToClipboard(selectedSchedule)}>
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
             <div><Label htmlFor="device-name">Device Name</Label><div className="relative"><Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input id="device-name" placeholder="e.g., 1st Year Bell" value={deviceName} onChange={(e) => setDeviceName(e.target.value)} className="pl-10" /></div></div>
             <div><Label htmlFor="ssid">Your WiFi SSID (Name)</Label><div className="relative"><Wifi className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input id="ssid" placeholder="Enter your WiFi name" value={ssid} onChange={(e) => setSsid(e.target.value)} className="pl-10" /></div></div>
             <div><Label htmlFor="password">Your WiFi Password</Label><div className="relative"><KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input id="password" type="password" placeholder="Enter WiFi password" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10" /></div></div>

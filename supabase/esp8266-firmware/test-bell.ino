@@ -1,13 +1,10 @@
 /*
- * Smart Bell Scheduler - HARDWARE TEST FIRMWARE v1.3 (Ultra-Robust Edition)
+ * Smart Bell Scheduler - HARDWARE TEST FIRMWARE v1.4 (User-Friendly Edition)
  *
- * CHANGELOG v1.3:
- * - Added HTTP Timeout: Sets a 10-second timeout for server requests to prevent
- *   the `-11` (read error) by making the device more patient with network lag.
- * - Specific Error Code Handling: Now provides a clear explanation for the `-11`
- *   error code in the Serial Monitor.
- * - Retained Pre-flight Check: Still includes the critical check to prevent running
- *   with placeholder values, which is the cause of the `400` error.
+ * CHANGELOG v1.4:
+ * - Improved User Guidance: Comments now explicitly direct you to the 'Connection'
+ *   page in the app, where you can easily copy the correct Schedule ID.
+ * - Retained all robust error handling and timeout features from v1.3.
 */
 
 // LIBRARIES
@@ -19,9 +16,14 @@
 // >>>>>>>>>> USER CONFIGURATION - FILL IN YOUR DETAILS HERE <<<<<<<<<<
 // =================================================================
 
+// STEP 1: Go to the "Connection" page in the Smart Bell Scheduler app.
+// STEP 2: Select a schedule from the dropdown menu.
+// STEP 3: The Schedule ID will appear. Click the 'Copy' button next to it.
+// STEP 4: Paste the copied ID below, replacing "YOUR_SCHEDULE_ID".
+
 const char* WIFI_SSID = "YOUR_WIFI_SSID";         // <-- REPLACE with your WiFi network name
 const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD"; // <-- REPLACE with your WiFi password
-const char* SCHEDULE_ID = "YOUR_SCHEDULE_ID";     // <-- REPLACE with a real Schedule ID from your app
+const char* SCHEDULE_ID = "YOUR_SCHEDULE_ID";     // <-- PASTE the ID from the app here
 
 // =================================================================
 // SUPABASE CONFIGURATION (DO NOT CHANGE)
@@ -123,7 +125,7 @@ void checkTestBellStatus() {
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("\n\n[INFO] Hardware Test Firmware v1.3");
+  Serial.println("\n\n[INFO] Hardware Test Firmware v1.4");
 
   pinMode(BELL_PIN, OUTPUT);
   pinMode(LED_PIN, OUTPUT);
@@ -139,7 +141,7 @@ void setup() {
     Serial.println("Please open 'test-bell.ino' and replace the following:");
     Serial.println(" - WIFI_SSID");
     Serial.println(" - WIFI_PASSWORD");
-    Serial.println(" - SCHEDULE_ID");
+    Serial.println(" - SCHEDULE_ID (Find this in the app's Connection page!)");
     Serial.println("Halting execution until code is updated.");
     Serial.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     while(true) { // Halt indefinitely
