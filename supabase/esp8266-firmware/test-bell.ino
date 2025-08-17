@@ -1,24 +1,13 @@
 /*
- * Smart Bell Scheduler - HARDWARE TEST FIRMWARE v1.1
+ * Smart Bell Scheduler - HARDWARE TEST FIRMWARE v1.2 (Robust Edition)
  *
- * PURPOSE:
- * This is a simplified firmware designed ONLY for testing the bell hardware.
- * It connects directly to your WiFi and listens for the "Test Bell" command
- * from the web app's dashboard. It does NOT handle regular schedules.
- *
- * HOW TO USE:
- * 1. FILL IN YOUR DETAILS in the "USER CONFIGURATION" section below.
- *    - Your WiFi Network Name (SSID)
- *    - Your WiFi Password
- *    - A valid Schedule ID from your application's database.
- * 2. Upload this code to your ESP8266.
- * 3. Open the Serial Monitor in the Arduino IDE (baud rate 115200).
- * 4. The device will connect to your WiFi.
- * 5. Go to your web app's dashboard and press the "Test Bell" button.
- * 6. The bell should ring for 30 seconds.
- *
- * REQUIRED LIBRARIES (Install via Arduino IDE Library Manager):
- * 1. ArduinoJson (by Benoit Blanchon)
+ * CHANGELOG v1.2:
+ * - Pre-flight Check: The firmware will now refuse to run if you haven't replaced
+ *   the placeholder WiFi and Schedule ID values. It will print an error in the
+ *   Serial Monitor until you update the code. This prevents 400/500 errors.
+ * - Graceful Error Handling: Provides clear, human-readable error messages in the
+ *   Serial Monitor for different HTTP status codes (e.g., 400, 404, 500).
+ * - Improved Logging: More detailed serial output to make debugging easier.
 */
 
 // LIBRARIES
@@ -107,22 +96,51 @@ void checkTestBellStatus() {
         Serial.println("[SYNC] No test signal active.");
       }
     } else {
-      Serial.printf("[ERROR] HTTP request failed, code: %d\n", httpCode);
+      // --- GRACEFUL ERROR HANDLING ---
+      Serial.printf("[ERROR] HTTP request failed. Status Code: %d\n", httpCode);
+      String payload = http.getString();
+      Serial.println("[ERROR] Server Response: " + payload);
+      
+      if (httpCode == 400) {
+        Serial.println("[HINT] Bad Request (400). The server rejected the data. This can happen if the SCHEDULE_ID is an empty string.");
+      } else if (httpCode == 404) {
+        Serial.println("[HINT] Not Found (404). The SCHEDULE_ID you provided does not exist in the database. Please double-check it.");
+      } else if (httpCode >= 500) {
+        Serial.println("[HINT] Server Error (5xx). There is an issue with the Supabase Edge Function. Check the function logs in your Supabase dashboard.");
+      }
     }
     http.end();
   } else {
-    Serial.println("[ERROR] Unable to begin HTTP connection.");
+    Serial.println("[ERROR] Unable to begin HTTP connection. Check your network.");
   }
 }
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("\n\n[INFO] Hardware Test Firmware v1.1");
+  Serial.println("\n\n[INFO] Hardware Test Firmware v1.2");
 
   pinMode(BELL_PIN, OUTPUT);
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(BELL_PIN, LOW);
   digitalWrite(LED_PIN, HIGH);
+
+  // --- PRE-FLIGHT CHECK ---
+  if (strcmp(WIFI_SSID, "YOUR_WIFI_SSID") == 0 || 
+      strcmp(WIFI_PASSWORD, "YOUR_WIFI_PASSWORD") == 0 || 
+      strcmp(SCHEDULE_ID, "YOUR_SCHEDULE_ID") == 0) {
+    Serial.println("\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    Serial.println("[FATAL ERROR] Configuration placeholders detected.");
+    Serial.println("Please open 'test-bell.ino' and replace the following:");
+    Serial.println(" - WIFI_SSID");
+    Serial.println(" - WIFI_PASSWORD");
+    Serial.println(" - SCHEDULE_ID");
+    Serial.println("Halting execution until code is updated.");
+    Serial.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+    while(true) { // Halt indefinitely
+      digitalWrite(LED_PIN, !digitalRead(LED_PIN)); // Blink LED rapidly
+      delay(100);
+    }
+  }
 
   connectToWiFi();
 }

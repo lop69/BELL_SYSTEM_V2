@@ -1,6 +1,18 @@
 {
   "compilerOptions": {
-    "types": ["https://deno.land/x/supa_fly/types.d.ts"]
+    "target": "esnext",
+    "module": "esnext",
+    "lib": ["esnext"],
+    "types": [
+      "https://deno.land/x/supa_fly/types.d.ts"
+    ],
+    "moduleResolution": "bundler",
+    "esModuleInterop": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true
   },
-  "include": ["./functions/**/*"]
+  "include": ["functions/**/*"]
 }
