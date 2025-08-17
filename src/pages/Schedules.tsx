@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Plus, MoreVertical, Trash2, Edit } from "lucide-react";
 import {
@@ -173,7 +173,7 @@ const Schedules = () => {
   }
 
   return (
-    <div>
+    <React.Fragment>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <div className="flex items-center gap-2">
           <TabsList>
@@ -217,7 +217,7 @@ const Schedules = () => {
                     <Trash2 className="h-4 w-4 mr-2" /> Delete
                   </Button>
                 </div>
-              </Header>
+              </CardHeader>
               <CardContent className="space-y-3">
                 {(bells[schedule.id] || []).length > 0 ? (
                   bells[schedule.id].map((bell) => (
@@ -299,7 +299,7 @@ const Schedules = () => {
           </form>
         </DialogContent>
       </Dialog>
-    </div>
+    </React.Fragment>
   );
 };
 
