@@ -54,7 +54,8 @@ const SignUp = () => {
       if (error) {
         showError(error.message);
       } else {
-        showSuccess("Sign up successful! Please check your email to verify your account.");
+        // Updated success message
+        showSuccess("Sign up successful! You can now log in.");
         navigate("/login"); // Redirect to login after successful signup
       }
     } catch (error) {
