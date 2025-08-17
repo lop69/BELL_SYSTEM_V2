@@ -8,6 +8,7 @@ import Schedules from "./pages/Schedules";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
+import SignUp from "./pages/SignUp"; // Import the new SignUp component
 import { AuthProvider } from "./contexts/AuthProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
 import SplashScreen from "./pages/SplashScreen";
@@ -34,6 +35,7 @@ const App = () => (
                       element={<DepartmentSelection />}
                     />
                     <Route path="/login" element={<Login />} />
+                    <Route path="/signup" element={<SignUp />} /> {/* New SignUp Route */}
                     <Route element={<ProtectedRoute />}>
                       <Route path="/app" element={<Layout />}>
                         <Route index element={<Dashboard />} />
