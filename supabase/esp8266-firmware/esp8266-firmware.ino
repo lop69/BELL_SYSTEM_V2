@@ -1,15 +1,17 @@
 /*
-  Smart Bell Scheduler - ESP8266 Firmware (v3)
+  Smart Bell Scheduler - ESP8266 Firmware (v3.1)
   
   This firmware connects an ESP8266 to a WiFi network, fetches bell schedules
   from a Supabase Edge Function, and rings a bell (by controlling a GPIO pin)
   at the scheduled times.
 
-  Version 3 Fixes:
+  Version 3.1 Fixes:
   - Adds handling for the Supabase Anon Key.
   - Sends the 'apikey' and 'Authorization' headers with requests to the Edge Function
     to solve the 401 Unauthorized error from the Supabase API Gateway.
   - Increased EEPROM size to store the additional configuration.
+  - Improved HTTP response handling to correctly differentiate between success (200 OK)
+    and server-side errors (4xx, 5xx).
 */
 
 #include <ESP8266WiFi.h>
@@ -46,7 +48,7 @@ String userId = "";
 String anonKey = "";
 
 unsigned long lastSyncTime = 0;
-const long syncInterval = 30000;
+const long syncInterval = 30000; // Sync every 30 seconds
 
 // --- FUNCTION PROTOTYPES ---
 void saveCredentials();
@@ -249,7 +251,6 @@ void syncWithSupabase() {
   HTTPClient http;
 
   if (http.begin(*client, edgeUrl)) {
-    // *** ADD AUTHORIZATION HEADERS ***
     String bearer = "Bearer " + anonKey;
     http.addHeader("Content-Type", "application/json");
     http.addHeader("apikey", anonKey);
@@ -258,9 +259,11 @@ void syncWithSupabase() {
     String requestBody = "{\"user_id\":\"" + userId + "\"}";
     int httpCode = http.POST(requestBody);
 
-    if (httpCode > 0) {
+    // --- MODIFICATION START ---
+    // Check for a successful response (200 OK) specifically
+    if (httpCode == HTTP_CODE_OK) {
       String payload = http.getString();
-      Serial.printf("[HTTP] POST... code: %d\n", httpCode);
+      Serial.println("[HTTP] POST... Success (200 OK)");
       
       StaticJsonDocument<1024> doc;
       DeserializationError error = deserializeJson(doc, payload);
@@ -269,13 +272,14 @@ void syncWithSupabase() {
         Serial.print("JSON parsing failed: ");
         Serial.println(error.c_str());
       } else {
+        Serial.println("Successfully parsed schedule data.");
         if (doc["test_bell_active"]) {
           Serial.println("Test bell is active! Ringing now.");
           ringBell();
         } else {
           JsonArray bells = doc["bells"];
           int currentDay = timeClient.getDay();
-          int adjustedDay = (currentDay == 0) ? 6 : currentDay - 1;
+          int adjustedDay = (currentDay == 0) ? 6 : currentDay - 1; // Adjust Sunday from 0 to 6
           String currentTime = timeClient.getFormattedTime().substring(0, 5);
 
           for (JsonObject bell : bells) {
@@ -290,14 +294,24 @@ void syncWithSupabase() {
               Serial.print("Scheduled bell match! Label: ");
               Serial.println(bell["label"].as<String>());
               ringBell();
-              break;
+              break; // Ring only once per sync cycle
             }
           }
         }
       }
-    } else {
+    } 
+    // Handle server-side errors (e.g., 401, 404, 500)
+    else if (httpCode > 0) {
+      String errorPayload = http.getString();
+      Serial.printf("[HTTP] POST... Server Error, code: %d\n", httpCode);
+      Serial.println("Server response: " + errorPayload);
+    } 
+    // Handle connection errors
+    else {
       Serial.printf("[HTTP] POST... failed, error: %s\n", http.errorToString(httpCode).c_str());
     }
+    // --- MODIFICATION END ---
+
     http.end();
   } else {
     Serial.printf("[HTTP] Unable to connect to: %s\n", edgeUrl.c_str());
