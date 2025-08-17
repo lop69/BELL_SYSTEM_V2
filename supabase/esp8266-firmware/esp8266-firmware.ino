@@ -1,5 +1,5 @@
 // ============================================================================
-// Smart Bell Scheduler Firmware for ESP8266
+// Smart Bell Scheduler Firmware for ESP8266 (v1.1)
 // ============================================================================
 // This firmware connects the ESP8266 to a WiFi network, fetches a specific
 // bell schedule from a Supabase Edge Function, and rings a bell at the
@@ -19,6 +19,7 @@
 
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
+#include <WiFiClient.h> // Required for the updated HTTPClient
 #include <ArduinoJson.h>
 #include <NTPClient.h>
 #include <WiFiUdp.h>
@@ -127,8 +128,12 @@ void connectToWiFi() {
 void checkScheduleAndRing() {
   if (WiFi.status() != WL_CONNECTED) return;
 
+  WiFiClient client;
   HTTPClient http;
-  http.begin(edge_url);
+  
+  // ** FIX: Use the new http.begin() method with a WiFiClient object **
+  http.begin(client, edge_url);
+  
   http.addHeader("Content-Type", "application/json");
   http.addHeader("apikey", anon_key);
   http.addHeader("Authorization", "Bearer " + String(anon_key));
@@ -146,6 +151,7 @@ void checkScheduleAndRing() {
     if (error) {
       Serial.print("deserializeJson() failed: ");
       Serial.println(error.c_str());
+      http.end();
       return;
     }
 
@@ -153,11 +159,13 @@ void checkScheduleAndRing() {
     if (doc["test_bell_active"] == true) {
       Serial.println("Test bell is active! Ringing now.");
       ringBell();
+      http.end();
       return; // Don't check regular schedule if test bell is active
     }
 
     // 2. Check Regular Schedule
     if (hasRungForCurrentMinute) {
+      http.end();
       return; // Already rang for this minute
     }
 
