@@ -19,41 +19,34 @@ import Connection from "./pages/Connection";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <div className="w-full h-full bg-gray-200 dark:bg-gray-900 flex items-center justify-center p-0">
-    <div className="w-full h-full main-gradient rounded-none overflow-hidden relative">
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <ThemeProvider attribute="class" defaultTheme="light">
-            <Toaster />
-            <BrowserRouter>
-              <AuthProvider>
-                <div className="h-full overflow-y-auto">
-                  <Routes>
-                    <Route path="/" element={<SplashScreen />} />
-                    <Route
-                      path="/select-department"
-                      element={<DepartmentSelection />}
-                    />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/signup" element={<SignUp />} />
-                    <Route element={<ProtectedRoute />}>
-                      <Route path="/app" element={<Layout />}>
-                        <Route index element={<Dashboard />} />
-                        <Route path="schedules" element={<Schedules />} />
-                        <Route path="connection" element={<Connection />} />
-                        <Route path="settings" element={<Settings />} />
-                      </Route>
-                    </Route>
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </div>
-              </AuthProvider>
-            </BrowserRouter>
-          </ThemeProvider>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </div>
-  </div>
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <ThemeProvider attribute="class" defaultTheme="light">
+        <Toaster />
+        <BrowserRouter>
+          <AuthProvider>
+            <div className="w-full h-screen main-gradient">
+              <Routes>
+                <Route path="/" element={<SplashScreen />} />
+                <Route path="/select-department" element={<DepartmentSelection />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/signup" element={<SignUp />} />
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/app" element={<Layout />}>
+                    <Route index element={<Dashboard />} />
+                    <Route path="schedules" element={<Schedules />} />
+                    <Route path="connection" element={<Connection />} />
+                    <Route path="settings" element={<Settings />} />
+                  </Route>
+                </Route>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </div>
+          </AuthProvider>
+        </BrowserRouter>
+      </ThemeProvider>
+    </TooltipProvider>
+  </QueryClientProvider>
 );
 
 export default App;
