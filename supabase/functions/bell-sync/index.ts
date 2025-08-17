@@ -1,3 +1,5 @@
+/// <reference types="https://deno.land/x/supa_fly/types.d.ts" />
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -12,10 +14,10 @@ serve(async (req) => {
   }
 
   try {
-    const { user_id } = await req.json();
+    const { schedule_id } = await req.json();
 
-    if (!user_id) {
-      return new Response(JSON.stringify({ error: "User ID is required" }), {
+    if (!schedule_id) {
+      return new Response(JSON.stringify({ error: "Schedule ID is required" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
@@ -26,26 +28,25 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Fetch schedules for the user
-    const { data: schedules, error: schedulesError } = await supabaseClient
+    // First, get the schedule to find the owner (user_id)
+    const { data: schedule, error: scheduleError } = await supabaseClient
       .from("schedules")
-      .select("id, name")
-      .eq("user_id", user_id)
-      .order("created_at", { ascending: true });
+      .select("id, name, user_id")
+      .eq("id", schedule_id)
+      .single();
 
-    if (schedulesError) {
-      console.error("Error fetching schedules:", schedulesError);
-      throw new Error("Failed to fetch schedules");
+    if (scheduleError || !schedule) {
+      console.error("Error fetching schedule:", scheduleError);
+      throw new Error("Failed to fetch schedule or schedule not found");
     }
 
-    const scheduleIds = schedules.map((s) => s.id);
+    const user_id = schedule.user_id;
 
-    // Fetch bells for the user's schedules
+    // Fetch bells for the specific schedule
     const { data: bells, error: bellsError } = await supabaseClient
       .from("bells")
-      .select("schedule_id, time, label, days_of_week")
-      .in("schedule_id", scheduleIds)
-      .eq("user_id", user_id)
+      .select("time, label, days_of_week")
+      .eq("schedule_id", schedule_id)
       .order("time", { ascending: true });
 
     if (bellsError) {
@@ -53,21 +54,21 @@ serve(async (req) => {
       throw new Error("Failed to fetch bells");
     }
 
-    // Check test bell status for the user
+    // Check test bell status for the user who owns the schedule
     const { data: testBell, error: testBellError } = await supabaseClient
       .from("test_bells")
       .select("is_active")
       .eq("user_id", user_id)
       .single();
 
-    if (testBellError && testBellError.code !== 'PGRST116') { // PGRST116 means no rows found
+    if (testBellError && testBellError.code !== 'PGRST116') { // Ignore "no rows found"
       console.error("Error fetching test bell status:", testBellError);
       throw new Error("Failed to fetch test bell status");
     }
 
     return new Response(
       JSON.stringify({
-        schedules,
+        schedule_name: schedule.name,
         bells,
         test_bell_active: testBell?.is_active || false,
       }),

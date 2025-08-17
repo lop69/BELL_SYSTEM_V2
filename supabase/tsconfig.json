@@ -1,0 +1,6 @@
+{
+  "compilerOptions": {
+    "types": ["https://deno.land/x/supa_fly/types.d.ts"]
+  },
+  "include": ["./functions/**/*"]
+}
