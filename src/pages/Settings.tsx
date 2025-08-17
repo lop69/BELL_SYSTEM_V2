@@ -34,9 +34,11 @@ import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
+import { useNavigate } from "react-router-dom";
 
 const Settings = () => {
   const { signOut, user, isGuest } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState({ first_name: "", last_name: "" });
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [notifications, setNotifications] = useState({ push: false, email: true });
@@ -140,7 +142,7 @@ const Settings = () => {
             <div className="flex items-center gap-3"><LifeBuoy className="h-5 w-5" /> Help & Support</div>
           </AccordionTrigger>
           <AccordionContent className="p-4 space-y-2">
-            <Button variant="link" className="p-0 h-auto">Contact Support</Button>
+            <Button variant="link" className="p-0 h-auto" onClick={() => navigate('/app/support')}>Contact Support</Button>
             <Button variant="link" className="p-0 h-auto">FAQs</Button>
           </AccordionContent>
         </AccordionItem>

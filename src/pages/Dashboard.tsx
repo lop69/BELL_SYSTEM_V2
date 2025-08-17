@@ -8,8 +8,13 @@ import { differenceInMilliseconds } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthProvider";
-import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
+import { showSuccess, showError } from "@/utils/toast";
 import { Bell } from "@/types/database";
+
+type GroupedSchedule = {
+  scheduleName: string;
+  bells: Bell[];
+};
 
 const containerVariants: Variants = {
   hidden: { opacity: 1 },
@@ -38,34 +43,54 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [todaySchedule, setTodaySchedule] = useState<Bell[]>([]);
+  const [todayGroupedSchedule, setTodayGroupedSchedule] = useState<GroupedSchedule[]>([]);
   const [nextBell, setNextBell] = useState<{ time: Date; label: string } | null>(null);
   const [countdown, setCountdown] = useState('00:00:00');
-  const [isTestBellActive, setIsTestBellActive] = useState(false);
   const timeZone = "Asia/Kolkata";
 
   useEffect(() => {
-    const fetchSchedule = async () => {
+    const fetchFullSchedule = async () => {
       if (!user) return;
-      
-      // JS getDay(): Sun=0, Mon=1... Sat=6. Assuming DB days_of_week follows this.
+
       const todayIndex = new Date().getDay();
 
-      const { data, error } = await supabase
+      const { data: schedulesData, error: schedulesError } = await supabase
+        .from('schedules')
+        .select('id, name')
+        .eq('user_id', user.id);
+
+      if (schedulesError) {
+        showError("Failed to fetch schedules.");
+        return;
+      }
+
+      const scheduleIds = schedulesData.map(s => s.id);
+      if (scheduleIds.length === 0) {
+        setTodayGroupedSchedule([]);
+        return;
+      }
+
+      const { data: bellsData, error: bellsError } = await supabase
         .from('bells')
         .select('*')
-        .eq('user_id', user.id)
-        .contains('days_of_week', [todayIndex]);
+        .in('schedule_id', scheduleIds)
+        .contains('days_of_week', [todayIndex])
+        .order('time', { ascending: true });
 
-      if (error) {
-        showError("Failed to fetch today's schedule.");
-        console.error(error);
-      } else {
-        const sortedSchedule = data.sort((a, b) => a.time.localeCompare(b.time));
-        setTodaySchedule(sortedSchedule);
+      if (bellsError) {
+        showError("Failed to fetch today's bells.");
+        return;
       }
+
+      const grouped = schedulesData.map(schedule => ({
+        scheduleName: schedule.name,
+        bells: bellsData.filter(bell => bell.schedule_id === schedule.id)
+      })).filter(group => group.bells.length > 0);
+
+      setTodayGroupedSchedule(grouped);
     };
-    fetchSchedule();
+
+    fetchFullSchedule();
   }, [user]);
 
   useEffect(() => {
@@ -73,13 +98,16 @@ const Dashboard = () => {
       const now = new Date();
       setCurrentTime(now);
 
-      const upcomingBell = todaySchedule
+      const allBells = todayGroupedSchedule.flatMap(g => g.bells);
+
+      const upcomingBell = allBells
         .map(bell => {
           const [hours, minutes] = bell.time.split(':').map(Number);
           const bellTime = new Date(now);
           bellTime.setHours(hours, minutes, 0, 0);
           return { time: bellTime, label: bell.label };
         })
+        .sort((a, b) => a.time.getTime() - b.time.getTime())
         .find(bell => bell.time > now);
 
       setNextBell(upcomingBell || null);
@@ -100,57 +128,7 @@ const Dashboard = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [todaySchedule]);
-
-  const handleTestBell = async () => {
-    if (!user) {
-      showError("Please log in to test the bell.");
-      return;
-    }
-
-    setIsTestBellActive(true);
-    const toastId = showLoading("Activating test bell for 30 seconds...");
-
-    try {
-      const { data: existingBell } = await supabase
-        .from('test_bells')
-        .select('id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (existingBell) {
-        await supabase
-          .from('test_bells')
-          .update({ is_active: true, triggered_at: new Date().toISOString() })
-          .eq('id', existingBell.id);
-      } else {
-        await supabase
-          .from('test_bells')
-          .insert({ user_id: user.id, is_active: true, triggered_at: new Date().toISOString() });
-      }
-
-      showSuccess("Test bell activated!");
-
-      setTimeout(async () => {
-        try {
-          await supabase
-            .from('test_bells')
-            .update({ is_active: false })
-            .eq('user_id', user.id);
-          showSuccess("Test bell deactivated.");
-        } catch (error) {
-          showError("Failed to deactivate test bell.");
-        } finally {
-          dismissToast(toastId);
-          setIsTestBellActive(false);
-        }
-      }, 30000);
-    } catch (error) {
-      dismissToast(toastId);
-      showError("Failed to activate test bell.");
-      setIsTestBellActive(false);
-    }
-  };
+  }, [todayGroupedSchedule]);
 
   return (
     <div className="space-y-6">
@@ -169,7 +147,7 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <p className="text-6xl font-bold text-primary tracking-tight">
+              <p className="text-5xl md:text-6xl font-bold text-primary tracking-tight">
                 {formatInTimeZone(currentTime, timeZone, 'HH:mm:ss')}
               </p>
             </CardContent>
@@ -184,7 +162,7 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
-              <p className="text-4xl font-bold text-primary tracking-tight">{countdown}</p>
+              <p className="text-3xl md:text-4xl font-bold text-primary tracking-tight">{countdown}</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -200,8 +178,8 @@ const Dashboard = () => {
                 <Edit className="h-6 w-6 mb-1 text-indigo-500" />
                 <span className="text-xs">Edit Schedule</span>
               </Button>
-              <Button variant="ghost" className="flex flex-col h-auto" onClick={handleTestBell} disabled={isTestBellActive}>
-                <BellRing className={`h-6 w-6 mb-1 ${isTestBellActive ? 'text-yellow-500 animate-pulse' : 'text-green-500'}`} />
+              <Button variant="ghost" className="flex flex-col h-auto" onClick={() => navigate('/app/connection')}>
+                <BellRing className="h-6 w-6 mb-1 text-green-500" />
                 <span className="text-xs">Test Bell</span>
               </Button>
             </CardContent>
@@ -216,21 +194,28 @@ const Dashboard = () => {
                 <Calendar className="h-5 w-5 text-muted-foreground" />
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              {todaySchedule.length > 0 ? todaySchedule.map(bell => {
-                const [hours, minutes] = bell.time.split(':').map(Number);
-                const bellDate = new Date();
-                bellDate.setHours(hours, minutes);
-                
-                return (
-                  <div key={bell.id} className="flex items-center gap-4">
-                    <span className="font-semibold text-primary w-20">
-                      {formatInTimeZone(bellDate, timeZone, 'hh:mm a')}
-                    </span>
-                    <p>{bell.label}</p>
+            <CardContent className="space-y-4 text-sm">
+              {todayGroupedSchedule.length > 0 ? todayGroupedSchedule.map(group => (
+                <div key={group.scheduleName}>
+                  <h3 className="font-semibold text-md mb-2 text-primary">{group.scheduleName}</h3>
+                  <div className="space-y-3 pl-2 border-l-2">
+                    {group.bells.map(bell => {
+                      const [hours, minutes] = bell.time.split(':').map(Number);
+                      const bellDate = new Date();
+                      bellDate.setHours(hours, minutes);
+                      
+                      return (
+                        <div key={bell.id} className="flex items-center gap-4">
+                          <span className="font-semibold text-primary w-20">
+                            {formatInTimeZone(bellDate, timeZone, 'hh:mm a')}
+                          </span>
+                          <p>{bell.label}</p>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              }) : (
+                </div>
+              )) : (
                 <p className="text-muted-foreground text-center p-4">No bells scheduled for today.</p>
               )}
             </CardContent>

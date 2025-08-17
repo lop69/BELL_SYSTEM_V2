@@ -190,8 +190,8 @@ const Connection = () => {
                 </div>
               </div>
               <Button className="w-full gradient-button" onClick={handleConnect}>Connect to Device</Button>
-              <div className="flex gap-2">
-                <Button variant="outline" className="w-full" onClick={handleRefreshStatus}><RefreshCw className="mr-2 h-4 w-4" /> Refresh Status</Button>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Button variant="outline" className="w-full" onClick={handleRefreshStatus}><RefreshCw className="mr-2 h-4 w-4" /> Refresh</Button>
                 <Button variant="destructive" className="w-full" onClick={handleDisconnect}><WifiOff className="mr-2 h-4 w-4" /> Disconnect</Button>
               </div>
             </div>

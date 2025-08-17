@@ -176,7 +176,7 @@ const Schedules = () => {
     <React.Fragment>
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <div className="flex items-center gap-2">
-          <TabsList>
+          <TabsList className="flex-wrap h-auto">
             {schedules.map((schedule) => (
               <TabsTrigger key={schedule.id} value={schedule.id}>
                 {schedule.name}
@@ -208,7 +208,7 @@ const Schedules = () => {
           <TabsContent value={schedule.id} key={schedule.id}>
             <Card className="glass-card">
               <CardHeader>
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                   <div>
                     <CardTitle>{schedule.name} Schedule</CardTitle>
                     <CardDescription>Manage the bell schedule for {schedule.name.toLowerCase()}.</CardDescription>
@@ -265,26 +265,26 @@ const Schedules = () => {
             <DialogDescription>Set the time, label, and recurrence for the new bell.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleAddBell} className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="schedule" className="text-right">Schedule</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+              <Label htmlFor="schedule" className="sm:text-right">Schedule</Label>
               <Select name="schedule" required defaultValue={activeTab}>
-                <SelectTrigger className="col-span-3"><SelectValue placeholder="Select a schedule" /></SelectTrigger>
+                <SelectTrigger className="col-span-1 sm:col-span-3"><SelectValue placeholder="Select a schedule" /></SelectTrigger>
                 <SelectContent>
                   {schedules.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="time" className="text-right">Time</Label>
-              <Input id="time" name="time" type="time" required className="col-span-3 bg-white/50 dark:bg-black/20" />
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+              <Label htmlFor="time" className="sm:text-right">Time</Label>
+              <Input id="time" name="time" type="time" required className="col-span-1 sm:col-span-3 bg-white/50 dark:bg-black/20" />
             </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="label" className="text-right">Label</Label>
-              <Input id="label" name="label" placeholder="e.g., Lunch Break" required className="col-span-3 bg-white/50 dark:bg-black/20" />
+            <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+              <Label htmlFor="label" className="sm:text-right">Label</Label>
+              <Input id="label" name="label" placeholder="e.g., Lunch Break" required className="col-span-1 sm:col-span-3 bg-white/50 dark:bg-black/20" />
             </div>
             <div>
               <Label className="mb-3 block text-center">Repeat on</Label>
-              <div className="flex justify-center items-center gap-2">
+              <div className="flex justify-center items-center gap-2 flex-wrap">
                 {daysOfWeek.map((day, index) => (
                   <div key={day} className="flex flex-col items-center gap-1">
                     <Checkbox id={`day-${day}`} defaultChecked />

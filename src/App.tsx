@@ -15,6 +15,7 @@ import SplashScreen from "./pages/SplashScreen";
 import DepartmentSelection from "./pages/DepartmentSelection";
 import { ThemeProvider } from "./contexts/ThemeProvider";
 import Connection from "./pages/Connection";
+import HelpAndSupport from "./pages/HelpAndSupport";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
                     <Route path="schedules" element={<Schedules />} />
                     <Route path="connection" element={<Connection />} />
                     <Route path="settings" element={<Settings />} />
+                    <Route path="support" element={<HelpAndSupport />} />
                   </Route>
                 </Route>
                 <Route path="*" element={<NotFound />} />
