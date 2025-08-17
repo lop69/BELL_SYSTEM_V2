@@ -4,16 +4,18 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { showError, showSuccess, showLoading, dismissToast } from "@/utils/toast";
 import { BellRing, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/contexts/AuthProvider";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
+  rememberMe: z.boolean().default(true),
 });
 
 type LoginFormInputs = z.infer<typeof loginSchema>;
@@ -27,9 +29,15 @@ const Login = () => {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
   } = useForm<LoginFormInputs>({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+      rememberMe: true,
+    },
   });
 
   const onSubmit = async (data: LoginFormInputs) => {
@@ -126,6 +134,23 @@ const Login = () => {
               )}
             </div>
 
+            <div className="flex items-center space-x-2">
+              <Controller
+                name="rememberMe"
+                control={control}
+                render={({ field }) => (
+                  <Checkbox
+                    id="remember-me"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                )}
+              />
+              <Label htmlFor="remember-me" className="cursor-pointer text-sm font-medium">
+                Remember me
+              </Label>
+            </div>
+
             <Button type="submit" className="w-full" disabled={isSubmitting}>
               {isSubmitting ? "Logging in..." : "Login"}
             </Button>
@@ -143,7 +168,6 @@ const Login = () => {
           </div>
 
           <Button variant="outline" className="w-full" onClick={handleGoogleSignIn}>
-            {/* Placeholder for Google Icon */}
             <svg className="mr-2 h-4 w-4" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M44.5 24.3H24.5V34.5H36.5C34.5 40.5 29.5 44.5 24.5 44.5C16.5 44.5 10.5 38.5 10.5 30.5C10.5 22.5 16.5 16.5 24.5 16.5C28.5 16.5 31.5 18.5 33.5 20.5L40.5 13.5C36.5 9.5 31.5 6.5 24.5 6.5C13.5 6.5 4.5 15.5 4.5 26.5C4.5 37.5 13.5 46.5 24.5 46.5C35.5 46.5 44.5 38.5 44.5 26.5C44.5 25.5 44.5 24.9 44.5 24.3Z" fill="#FFC107"/><path d="M6.5 14.5L13.5 20.5C15.5 16.5 19.5 13.5 24.5 13.5C28.5 13.5 32.5 15.5 35.5 18.5L42.5 11.5C37.5 7.5 31.5 4.5 24.5 4.5C16.5 4.5 9.5 8.5 6.5 14.5Z" fill="#FF3D00"/><path d="M24.5 48.5C31.5 48.5 37.5 45.5 42.5 41.5L35.5 34.5C32.5 37.5 28.5 39.5 24.5 39.5C19.5 39.5 15.5 36.5 13.5 32.5L6.5 39.5C9.5 44.5 16.5 48.5 24.5 48.5Z" fill="#4CAF50"/><path d="M44.5 24.3H24.5V34.5H36.5C34.5 40.5 29.5 44.5 24.5 44.5C16.5 44.5 10.5 38.5 10.5 30.5C10.5 22.5 16.5 16.5 24.5 16.5C28.5 16.5 31.5 18.5 33.5 20.5L40.5 13.5C36.5 9.5 31.5 6.5 24.5 6.5C13.5 6.5 4.5 15.5 4.5 26.5C4.5 37.5 13.5 46.5 24.5 46.5C35.5 46.5 44.5 38.5 44.5 26.5C44.5 25.5 44.5 24.9 44.5 24.3Z" fill="#1976D2"/></svg>
             Continue with Google
           </Button>
