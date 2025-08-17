@@ -1,35 +1,12 @@
 import { useAuth } from "@/contexts/AuthProvider";
-import { User, Bell, LogOut, Palette, Edit, ShieldAlert, LifeBuoy } from "lucide-react";
+import { User, Bell, LogOut, Palette, Edit, ShieldAlert, LifeBuoy, Phone, Building, Briefcase } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,7 +16,13 @@ import { useNavigate } from "react-router-dom";
 const Settings = () => {
   const { signOut, user, isGuest } = useAuth();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState({ first_name: "", last_name: "" });
+  const [profile, setProfile] = useState({
+    first_name: "",
+    last_name: "",
+    phone_number: "",
+    department: "",
+    role: "",
+  });
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
   const [notifications, setNotifications] = useState({ push: false, email: true });
 
@@ -48,7 +31,7 @@ const Settings = () => {
       if (user) {
         const { data } = await supabase
           .from("profiles")
-          .select("first_name, last_name")
+          .select("first_name, last_name, phone_number, department, role")
           .eq("id", user.id)
           .single();
         if (data) setProfile(data);
@@ -101,16 +84,21 @@ const Settings = () => {
           <AccordionContent className="space-y-4 p-2">
             <div className="rounded-lg border p-4">
               <p className="font-semibold">{isGuest ? "Guest User" : `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || user?.email}</p>
-              <p className="text-sm text-muted-foreground">{isGuest ? "Viewing in demo mode" : "Standard Account"}</p>
+              <p className="text-sm text-muted-foreground">{isGuest ? "Viewing in demo mode" : profile.role || "Standard Account"}</p>
             </div>
             {!isGuest && (
               <Dialog open={isProfileDialogOpen} onOpenChange={setIsProfileDialogOpen}>
                 <DialogTrigger asChild><Button variant="outline" className="w-full"><Edit className="mr-2 h-4 w-4" /> Edit Profile</Button></DialogTrigger>
                 <DialogContent className="glass-card">
-                  <DialogHeader><DialogTitle>Edit Profile</DialogTitle><DialogDescription>Update your personal information.</DialogDescription></DialogHeader>
-                  <form onSubmit={handleProfileUpdate} className="space-y-4">
-                    <div><Label htmlFor="firstName">First Name</Label><Input id="firstName" value={profile.first_name} onChange={(e) => setProfile({...profile, first_name: e.target.value})} className="bg-white/50 dark:bg-black/20" /></div>
-                    <div><Label htmlFor="lastName">Last Name</Label><Input id="lastName" value={profile.last_name} onChange={(e) => setProfile({...profile, last_name: e.target.value})} className="bg-white/50 dark:bg-black/20" /></div>
+                  <DialogHeader><DialogTitle>Edit Profile</DialogTitle><DialogDescription>Update your personal and professional information.</DialogDescription></DialogHeader>
+                  <form onSubmit={handleProfileUpdate} className="space-y-4 pt-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div><Label htmlFor="firstName">First Name</Label><Input id="firstName" value={profile.first_name || ''} onChange={(e) => setProfile({...profile, first_name: e.target.value})} className="bg-white/50 dark:bg-black/20" /></div>
+                      <div><Label htmlFor="lastName">Last Name</Label><Input id="lastName" value={profile.last_name || ''} onChange={(e) => setProfile({...profile, last_name: e.target.value})} className="bg-white/50 dark:bg-black/20" /></div>
+                    </div>
+                    <div><Label htmlFor="phone">Phone Number</Label><div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input id="phone" type="tel" value={profile.phone_number || ''} onChange={(e) => setProfile({...profile, phone_number: e.target.value})} className="pl-10 bg-white/50 dark:bg-black/20" /></div></div>
+                    <div><Label htmlFor="department">Department</Label><div className="relative"><Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input id="department" value={profile.department || ''} onChange={(e) => setProfile({...profile, department: e.target.value})} className="pl-10 bg-white/50 dark:bg-black/20" /></div></div>
+                    <div><Label htmlFor="role">Role</Label><div className="relative"><Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input id="role" value={profile.role || ''} onChange={(e) => setProfile({...profile, role: e.target.value})} className="pl-10 bg-white/50 dark:bg-black/20" /></div></div>
                     <DialogFooter><Button type="submit" className="gradient-button">Save Changes</Button></DialogFooter>
                   </form>
                 </DialogContent>

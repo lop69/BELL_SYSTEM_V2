@@ -16,6 +16,7 @@ import DepartmentSelection from "./pages/DepartmentSelection";
 import { ThemeProvider } from "./contexts/ThemeProvider";
 import Connection from "./pages/Connection";
 import HelpAndSupport from "./pages/HelpAndSupport";
+import { NotificationProvider } from "./contexts/NotificationProvider";
 
 const queryClient = new QueryClient();
 
@@ -26,24 +27,29 @@ const App = () => (
         <Toaster />
         <BrowserRouter>
           <AuthProvider>
-            <div className="w-full h-screen main-gradient">
-              <Routes>
-                <Route path="/" element={<SplashScreen />} />
-                <Route path="/select-department" element={<DepartmentSelection />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/signup" element={<SignUp />} />
-                <Route element={<ProtectedRoute />}>
-                  <Route path="/app" element={<Layout />}>
-                    <Route index element={<Dashboard />} />
-                    <Route path="schedules" element={<Schedules />} />
-                    <Route path="connection" element={<Connection />} />
-                    <Route path="settings" element={<Settings />} />
-                    <Route path="support" element={<HelpAndSupport />} />
+            <NotificationProvider>
+              <div className="w-full h-screen main-gradient">
+                <Routes>
+                  <Route path="/" element={<SplashScreen />} />
+                  <Route
+                    path="/select-department"
+                    element={<DepartmentSelection />}
+                  />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/signup" element={<SignUp />} />
+                  <Route element={<ProtectedRoute />}>
+                    <Route path="/app" element={<Layout />}>
+                      <Route index element={<Dashboard />} />
+                      <Route path="schedules" element={<Schedules />} />
+                      <Route path="connection" element={<Connection />} />
+                      <Route path="settings" element={<Settings />} />
+                      <Route path="support" element={<HelpAndSupport />} />
+                    </Route>
                   </Route>
-                </Route>
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </div>
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </div>
+            </NotificationProvider>
           </AuthProvider>
         </BrowserRouter>
       </ThemeProvider>
