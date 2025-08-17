@@ -5,7 +5,7 @@ import { motion, Variants } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { format, differenceInMilliseconds } from "date-fns";
-import { supabase } from "@/lib/supabase";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthProvider";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 
