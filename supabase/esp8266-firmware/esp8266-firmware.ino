@@ -1,5 +1,5 @@
 // ============================================================================
-// Smart Bell Scheduler Firmware for ESP8266 (v2.0 - Robust)
+// Smart Bell Scheduler Firmware for ESP8266 (v2.1 - Robust)
 // ============================================================================
 // This firmware connects the ESP8266 to a WiFi network, fetches a specific
 // bell schedule from a Supabase Edge Function, and rings a bell at the
@@ -64,7 +64,7 @@ void setup() {
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, HIGH); // LED is active low, so HIGH is OFF
 
-  Serial.println("\n[INFO] Smart Bell Scheduler v2.0 Starting...");
+  Serial.println("\n[INFO] Smart Bell Scheduler v2.1 Starting...");
 
   setupWebServer();
   
@@ -232,7 +232,8 @@ void handleRoot() {
 
 void handleConfig() {
   if (!server.hasArg("plain")) {
-    server.send(400, "text/plain", "Body not received");
+    Serial.println("[ERROR] Config request received with no data. Sending error to app.");
+    server.send(400, "application/json", "{\"status\":\"error\", \"message\":\"Configuration data was missing from the request.\"}");
     return;
   }
   String body = server.arg("plain");
