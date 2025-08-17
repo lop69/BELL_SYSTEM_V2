@@ -15,51 +15,21 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const schedule_id = body.schedule_id;
+    const user_id = body.user_id;
 
-    if (!schedule_id || typeof schedule_id !== 'string' || schedule_id.trim() === '') {
-      return new Response(JSON.stringify({ error: "A valid 'schedule_id' string is required in the request body." }), {
+    if (!user_id || typeof user_id !== 'string' || user_id.trim() === '') {
+      return new Response(JSON.stringify({ error: "A valid 'user_id' string is required in the request body." }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
     }
 
-    const supabaseClient = createClient(
+    const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    const { data: schedule, error: scheduleError } = await supabaseClient
-      .from("schedules")
-      .select("name, user_id")
-      .eq("id", schedule_id)
-      .single();
-
-    if (scheduleError || !schedule) {
-      if (scheduleError && scheduleError.code !== 'PGRST116') { // Not a "no rows found" error
-        console.error("Database error fetching schedule:", scheduleError);
-        throw new Error("Database error while fetching schedule.");
-      }
-      return new Response(JSON.stringify({ error: `Schedule with ID '${schedule_id}' not found.` }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 404, // Not Found is more appropriate
-      });
-    }
-
-    const { name: schedule_name, user_id } = schedule;
-
-    const { data: bells, error: bellsError } = await supabaseClient
-      .from("bells")
-      .select("time, label, days_of_week")
-      .eq("schedule_id", schedule_id)
-      .order("time", { ascending: true });
-
-    if (bellsError) {
-      console.error("Error fetching bells:", bellsError);
-      throw new Error("Failed to fetch bells");
-    }
-
-    const { data: testBell, error: testBellError } = await supabaseClient
+    const { data: testBell, error: testBellError } = await supabaseAdmin
       .from("test_bells")
       .select("is_active")
       .eq("user_id", user_id)
@@ -67,13 +37,11 @@ serve(async (req) => {
 
     if (testBellError && testBellError.code !== 'PGRST116') {
       console.error("Error fetching test bell status:", testBellError);
-      throw new Error("Failed to fetch test bell status");
+      throw new Error("Database error while fetching test bell status.");
     }
 
     return new Response(
       JSON.stringify({
-        schedule_name: schedule_name,
-        bells,
         test_bell_active: testBell?.is_active || false,
       }),
       {

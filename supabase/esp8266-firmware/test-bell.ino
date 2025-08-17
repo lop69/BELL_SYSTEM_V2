@@ -1,10 +1,10 @@
 /*
- * Smart Bell Scheduler - HARDWARE TEST FIRMWARE v1.4 (User-Friendly Edition)
+ * Smart Bell Scheduler - HARDWARE TEST FIRMWARE v1.5 (User ID Edition)
  *
- * CHANGELOG v1.4:
- * - Improved User Guidance: Comments now explicitly direct you to the 'Connection'
- *   page in the app, where you can easily copy the correct Schedule ID.
- * - Retained all robust error handling and timeout features from v1.3.
+ * CHANGELOG v1.5:
+ * - Switched from Schedule ID to User ID for configuration, simplifying setup.
+ * - Now uses a dedicated '/test-bell-check' edge function for improved reliability.
+ * - Updated instructions to guide you to find your User ID in the Supabase dashboard.
 */
 
 // LIBRARIES
@@ -16,21 +16,21 @@
 // >>>>>>>>>> USER CONFIGURATION - FILL IN YOUR DETAILS HERE <<<<<<<<<<
 // =================================================================
 
-// STEP 1: Go to the "Connection" page in the Smart Bell Scheduler app.
-// STEP 2: Select a schedule from the dropdown menu.
-// STEP 3: The Schedule ID will appear. Click the 'Copy' button next to it.
-// STEP 4: Paste the copied ID below, replacing "YOUR_SCHEDULE_ID".
+// STEP 1: Log in to your Supabase dashboard.
+// STEP 2: Go to 'Authentication' -> 'Users'.
+// STEP 3: Find your user account and copy the 'UID' value.
+// STEP 4: Paste the copied UID below, replacing "YOUR_USER_ID".
 
-const char* WIFI_SSID = "YOUR_WIFI_SSID";         // <-- REPLACE with your WiFi network name
+const char* WIFI_SSID = "YOUR_WIFI_SSID";     // <-- REPLACE with your WiFi network name
 const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD"; // <-- REPLACE with your WiFi password
-const char* SCHEDULE_ID = "YOUR_SCHEDULE_ID";     // <-- PASTE the ID from the app here
+const char* USER_ID = "YOUR_USER_ID";         // <-- PASTE your User ID (UID) from Supabase here
 
 // =================================================================
 // SUPABASE CONFIGURATION (DO NOT CHANGE)
 // =================================================================
 
 const char* SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRrcmdiY2ZpZGdneGlvaXp2a2VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzNDgzOTUsImV4cCI6MjA3MDkyNDM5NX0.eTzeTrcYRG3JemHh-N-rSRcHkMAdp2Afnt20Ft---ZA";
-const char* SUPABASE_EDGE_URL = "https://tkrgbcfidggxioizvkeq.supabase.co/functions/v1/bell-sync";
+const char* SUPABASE_EDGE_URL = "https://tkrgbcfidggxioizvkeq.supabase.co/functions/v1/test-bell-check";
 
 // =================================================================
 
@@ -85,7 +85,7 @@ void checkTestBellStatus() {
     http.addHeader("Authorization", "Bearer " + String(SUPABASE_ANON_KEY));
 
     JsonDocument requestBody;
-    requestBody["schedule_id"] = SCHEDULE_ID;
+    requestBody["user_id"] = USER_ID;
     String requestBodyString;
     serializeJson(requestBody, requestBodyString);
 
@@ -100,22 +100,9 @@ void checkTestBellStatus() {
         Serial.println("[SYNC] No test signal active.");
       }
     } else {
-      // --- GRACEFUL ERROR HANDLING ---
       Serial.printf("[ERROR] HTTP request failed. Status Code: %d\n", httpCode);
       String payload = http.getString();
       Serial.println("[ERROR] Server Response: " + payload);
-      
-      if (httpCode == 400) {
-        Serial.println("[HINT] Bad Request (400). The server rejected the data. This can happen if the SCHEDULE_ID is an empty string or invalid.");
-      } else if (httpCode == 404) {
-        Serial.println("[HINT] Not Found (404). The SCHEDULE_ID you provided does not exist in the database. Please double-check it.");
-      } else if (httpCode == -11) { // HTTPC_ERROR_READ
-        Serial.println("[HINT] Read Timeout (-11). The device connected to the server but failed to read the response in time. This is usually a temporary network issue. It will try again.");
-      } else if (httpCode < 0) {
-        Serial.println("[HINT] This is a client-side error. Check your WiFi connection and ensure the server URL is correct.");
-      } else if (httpCode >= 500) {
-        Serial.println("[HINT] Server Error (5xx). There is an issue with the Supabase Edge Function. Check the function logs in your Supabase dashboard.");
-      }
     }
     http.end();
   } else {
@@ -125,27 +112,26 @@ void checkTestBellStatus() {
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("\n\n[INFO] Hardware Test Firmware v1.4");
+  Serial.println("\n\n[INFO] Hardware Test Firmware v1.5");
 
   pinMode(BELL_PIN, OUTPUT);
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(BELL_PIN, LOW);
   digitalWrite(LED_PIN, HIGH);
 
-  // --- PRE-FLIGHT CHECK ---
   if (strcmp(WIFI_SSID, "YOUR_WIFI_SSID") == 0 || 
       strcmp(WIFI_PASSWORD, "YOUR_WIFI_PASSWORD") == 0 || 
-      strcmp(SCHEDULE_ID, "YOUR_SCHEDULE_ID") == 0) {
+      strcmp(USER_ID, "YOUR_USER_ID") == 0) {
     Serial.println("\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     Serial.println("[FATAL ERROR] Configuration placeholders detected.");
     Serial.println("Please open 'test-bell.ino' and replace the following:");
     Serial.println(" - WIFI_SSID");
     Serial.println(" - WIFI_PASSWORD");
-    Serial.println(" - SCHEDULE_ID (Find this in the app's Connection page!)");
+    Serial.println(" - USER_ID (Find this in Supabase Authentication -> Users)");
     Serial.println("Halting execution until code is updated.");
     Serial.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-    while(true) { // Halt indefinitely
-      digitalWrite(LED_PIN, !digitalRead(LED_PIN)); // Blink LED rapidly
+    while(true) {
+      digitalWrite(LED_PIN, !digitalRead(LED_PIN));
       delay(100);
     }
   }
@@ -164,5 +150,5 @@ void loop() {
     checkTestBellStatus();
   }
 
-  delay(100); // Small delay to keep the loop from running too fast
+  delay(100);
 }
