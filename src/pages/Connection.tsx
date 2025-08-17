@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wifi, CheckCircle, XCircle, Loader, RefreshCw, WifiOff, KeyRound, Tag } from "lucide-react";
+import { Wifi, CheckCircle, XCircle, Loader, RefreshCw, WifiOff, KeyRound, Tag, Info, BellRing, Signal } from "lucide-react";
 import { motion } from "framer-motion";
 import { showLoading, dismissToast, showSuccess, showError } from "@/utils/toast";
 import { useAuth } from "@/contexts/AuthProvider";
@@ -16,7 +16,6 @@ type Status = "connected" | "failed" | "pending" | "disconnected";
 const Connection = () => {
   const { user } = useAuth();
   const [status, setStatus] = useState<Status>("disconnected");
-  const [espIp, setEspIp] = useState<string>("");
   const [ssid, setSsid] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [deviceName, setDeviceName] = useState<string>("");
@@ -24,6 +23,7 @@ const Connection = () => {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [anonKey] = useState<string>(import.meta.env.VITE_SUPABASE_ANON_KEY || "");
   const [deviceIp, setDeviceIp] = useState<string | null>(null);
+  const configModeIp = "192.168.4.1";
 
   useEffect(() => {
     const fetchSchedules = async () => {
@@ -40,17 +40,13 @@ const Connection = () => {
   };
 
   const sendCommandToESP = async (endpoint: string, method: string = "GET", body?: any) => {
-    if (!espIp) {
-      showError("Please enter the ESP8266 IP address.");
-      return null;
-    }
-    const url = `http://${espIp}/${endpoint}`;
+    const url = `http://${configModeIp}/${endpoint}`;
     try {
-      const response = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+      const response = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(5000) });
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       return await response.json();
     } catch (error) {
-      showError(`Failed to communicate with device at ${espIp}. Make sure it's in config mode.`);
+      showError(`Failed to communicate with device at ${configModeIp}. Ensure you are connected to its 'SmartBell-Config' WiFi.`);
       return null;
     }
   };
@@ -70,12 +66,11 @@ const Connection = () => {
       schedule_id: selectedSchedule,
     });
 
-    if (response) {
+    if (response && response.status === 'ok') {
       const { error } = await supabase.from("devices").insert({
         user_id: user.id,
         schedule_id: selectedSchedule,
         device_name: deviceName,
-        device_ip: espIp,
         is_connected: true,
         last_seen: new Date().toISOString(),
       });
@@ -85,8 +80,8 @@ const Connection = () => {
         showError("Device configured, but failed to save to database.");
         setStatus("failed");
       } else {
-        showSuccess("Device configured and saved!");
-        setTimeout(handleRefreshStatus, 5000);
+        showSuccess("Device configured and saved! It will now connect to your WiFi.");
+        setStatus("connected");
       }
     } else {
       dismissToast(toastId);
@@ -95,76 +90,98 @@ const Connection = () => {
     }
   };
 
-  const handleRefreshStatus = async () => {
-    const toastId = showLoading("Refreshing device status...");
-    const response = await sendCommandToESP("status");
-    dismissToast(toastId);
+  const handleTestBell = async () => {
+    if (!user) return;
+    const toastId = showLoading("Sending test signal...");
+    try {
+      // Activate the test bell
+      const { error: activateError } = await supabase
+        .from("test_bells")
+        .upsert({ user_id: user.id, is_active: true }, { onConflict: 'user_id' });
+      if (activateError) throw activateError;
 
-    if (response) {
-      if (response.status === "connected") {
-        setStatus("connected");
-        setDeviceIp(response.ip);
-        showSuccess(`Device connected! IP: ${response.ip}`);
-      } else {
-        setStatus("disconnected");
-        setDeviceIp(null);
-        showError("Device is not connected to WiFi.");
-      }
-    } else {
-      setStatus("disconnected");
-      setDeviceIp(null);
+      showSuccess("Test signal sent! The bell should ring within 30 seconds.");
+
+      // Deactivate after a delay
+      setTimeout(async () => {
+        await supabase
+          .from("test_bells")
+          .update({ is_active: false })
+          .eq("user_id", user.id);
+      }, 30000); // The device checks every 30s, so we turn it off after that window.
+
+    } catch (error) {
+      showError("Failed to send test signal.");
+    } finally {
+      dismissToast(toastId);
     }
   };
 
   const StatusIndicator = () => {
     switch (status) {
-      case 'connected': return <CheckCircle className="h-16 w-16 text-green-500" />;
-      case 'failed': return <XCircle className="h-16 w-16 text-red-500" />;
-      case 'pending': return <Loader className="h-16 w-16 text-muted-foreground animate-spin" />;
-      default: return <WifiOff className="h-16 w-16 text-muted-foreground" />;
+      case 'connected': return <CheckCircle className="h-12 w-12 text-green-500" />;
+      case 'failed': return <XCircle className="h-12 w-12 text-red-500" />;
+      case 'pending': return <Loader className="h-12 w-12 text-muted-foreground animate-spin" />;
+      default: return <WifiOff className="h-12 w-12 text-muted-foreground" />;
     }
   };
 
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-primary">Device Connection</h1>
-      <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
+      
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+        <Card className="glass-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5" />Step 1: Connect to Device WiFi</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground space-y-2">
+            <p>To configure your device, first connect your phone to its temporary WiFi network.</p>
+            <p><strong>Network Name:</strong> <code className="font-mono bg-muted p-1 rounded-md">SmartBell-Config</code></p>
+            <p><strong>Password:</strong> <code className="font-mono bg-muted p-1 rounded-md">password</code></p>
+            <p>Your phone may say "No Internet," which is normal. Stay connected and proceed to Step 2.</p>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+        <Card className="glass-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Signal className="h-5 w-5" />Step 2: Send Configuration</CardTitle>
+            <CardDescription>Enter your main WiFi details here. This information will be sent to the device.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="schedule-select">Assign to Year/Schedule</Label>
+              <Select value={selectedSchedule} onValueChange={setSelectedSchedule}><SelectTrigger><SelectValue placeholder="Select a schedule..." /></SelectTrigger><SelectContent>{schedules.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select>
+            </div>
+            <div>
+              <Label htmlFor="device-name">Device Name</Label>
+              <div className="relative"><Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input id="device-name" placeholder="e.g., 1st Year Bell" value={deviceName} onChange={(e) => setDeviceName(e.target.value)} className="pl-10" /></div>
+            </div>
+            <div>
+              <Label htmlFor="ssid">Your WiFi SSID (Name)</Label>
+              <div className="relative"><Wifi className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input id="ssid" placeholder="Enter your WiFi name" value={ssid} onChange={(e) => setSsid(e.target.value)} className="pl-10" /></div>
+            </div>
+            <div>
+              <Label htmlFor="password">Your WiFi Password</Label>
+              <div className="relative"><KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input id="password" type="password" placeholder="Enter WiFi password" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10" /></div>
+            </div>
+            <Button className="w-full gradient-button" onClick={handleConnect}>Connect & Save Device</Button>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
         <Card className="glass-card text-center p-6">
           <CardHeader className="p-0 mb-4">
-            <CardTitle className="flex items-center justify-center gap-2"><Wifi /><span>ESP8266 Status</span></CardTitle>
+            <CardTitle className="flex items-center justify-center gap-2">Step 3: Status & Testing</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-4 p-0">
             <StatusIndicator />
             <p className="font-semibold capitalize">{status}</p>
-            {deviceIp && <CardDescription>IP: {deviceIp}</CardDescription>}
-            
-            <div className="space-y-4 w-full mt-4 text-left">
-              <div>
-                <Label htmlFor="schedule-select">Assign to Year/Schedule</Label>
-                <Select value={selectedSchedule} onValueChange={setSelectedSchedule}>
-                  <SelectTrigger><SelectValue placeholder="Select a schedule..." /></SelectTrigger>
-                  <SelectContent>{schedules.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label htmlFor="device-name">Device Name</Label>
-                <div className="relative"><Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input id="device-name" placeholder="e.g., 1st Year Bell" value={deviceName} onChange={(e) => setDeviceName(e.target.value)} className="pl-10" /></div>
-              </div>
-              <div>
-                <Label htmlFor="esp-ip">ESP8266 IP Address (in Config Mode)</Label>
-                <Input id="esp-ip" placeholder="Usually 192.168.4.1" value={espIp} onChange={(e) => setEspIp(e.target.value)} />
-              </div>
-              <div>
-                <Label htmlFor="ssid">WiFi SSID</Label>
-                <Input id="ssid" placeholder="Enter your WiFi name" value={ssid} onChange={(e) => setSsid(e.target.value)} />
-              </div>
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" placeholder="Enter WiFi password" value={password} onChange={(e) => setPassword(e.target.value)} />
-              </div>
-              <Button className="w-full gradient-button" onClick={handleConnect}>Connect & Save Device</Button>
-              <Button variant="outline" className="w-full" onClick={handleRefreshStatus}><RefreshCw className="mr-2 h-4 w-4" /> Refresh Status</Button>
-            </div>
+            <CardDescription>Once connected, the device's blue light will blink steadily.</CardDescription>
+            <Button variant="outline" className="w-full" onClick={handleTestBell} disabled={status !== 'connected'}><BellRing className="mr-2 h-4 w-4" /> Test Bell</Button>
           </CardContent>
         </Card>
       </motion.div>
