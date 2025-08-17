@@ -8,7 +8,7 @@ import { differenceInMilliseconds } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthProvider";
-import { showSuccess, showError } from "@/utils/toast";
+import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 import { Bell } from "@/types/database";
 
 type GroupedSchedule = {
@@ -130,6 +130,33 @@ const Dashboard = () => {
     return () => clearInterval(timer);
   }, [todayGroupedSchedule]);
 
+  const handleTestBell = async () => {
+    if (!user) return;
+    const toastId = showLoading("Sending test signal...");
+    try {
+      const { error: activateError } = await supabase
+        .from("test_bells")
+        .upsert({ user_id: user.id, is_active: true }, { onConflict: 'user_id' });
+      if (activateError) throw activateError;
+
+      showSuccess("Test signal sent! The bell should ring shortly.");
+
+      // The device will see the 'is_active: true' flag on its next sync.
+      // We set it back to false after a delay to ensure it doesn't get stuck.
+      setTimeout(async () => {
+        await supabase
+          .from("test_bells")
+          .update({ is_active: false })
+          .eq("user_id", user.id);
+      }, 10000); // Reset after 10 seconds just in case.
+
+    } catch (error) {
+      showError("Failed to send test signal.");
+    } finally {
+      dismissToast(toastId);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}>
@@ -178,7 +205,7 @@ const Dashboard = () => {
                 <Edit className="h-6 w-6 mb-1 text-indigo-500" />
                 <span className="text-xs">Edit Schedule</span>
               </Button>
-              <Button variant="ghost" className="flex flex-col h-auto" onClick={() => navigate('/app/connection')}>
+              <Button variant="ghost" className="flex flex-col h-auto" onClick={handleTestBell}>
                 <BellRing className="h-6 w-6 mb-1 text-green-500" />
                 <span className="text-xs">Test Bell</span>
               </Button>

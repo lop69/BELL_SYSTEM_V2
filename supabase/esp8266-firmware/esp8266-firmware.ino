@@ -1,14 +1,13 @@
 /*
- * Smart Bell Scheduler - Production Firmware v2.3 (CORS FIX)
+ * Smart Bell Scheduler - Production Firmware v2.4 (Performance & Test Bell)
  *
  * This firmware works with the Dyad-generated web application to create a configurable,
  * network-connected bell system.
  *
  * CHANGELOG:
- * v2.3 - Resolved "Failed to send configuration" error by adding CORS headers.
- *      - The configuration web server now handles OPTIONS pre-flight requests and
- *        sends 'Access-Control-Allow-Origin' headers on all responses, which is
- *        required by modern browsers for cross-domain communication.
+ * v2.4 - Reduced communication delay: Sync interval with Supabase lowered to 5 seconds.
+ *      - Implemented a dedicated 30-second ring duration for the Test Bell feature.
+ *      - Separated regular bell ring logic (2 seconds) from test bell logic.
  *
  * FEATURES:
  * - Configuration Mode: Creates a WiFi hotspot ("SmartBell-Config") for initial setup.
@@ -62,7 +61,7 @@ NTPClient timeClient(ntpUDP, "pool.ntp.org", 19800, 60000); // IST is UTC +5:30 
 JsonDocument scheduleDoc; // Holds the bell schedule fetched from Supabase
 bool testBellActive = false;
 unsigned long lastSyncTime = 0;
-const long syncInterval = 30000; // Sync with Supabase every 30 seconds
+const long syncInterval = 5000; // Sync with Supabase every 5 seconds for high responsiveness
 
 // =================================================================
 // EEPROM & CONFIGURATION MANAGEMENT
@@ -153,7 +152,7 @@ void startConfigPortal() {
   Serial.println(apIP);
 
   server.on("/config", HTTP_POST, handleConfig);
-  server.on("/config", HTTP_OPTIONS, handleOptions); // Handle browser pre-flight requests
+  server.on("/config", HTTP_OPTIONS, handleOptions);
   server.begin();
 
   Serial.println("[SETUP] Connect to WiFi 'SmartBell-Config' (password: 'password')");
@@ -221,11 +220,6 @@ void syncSchedule() {
 
     if (httpCode > 0) {
       String payload = http.getString();
-      Serial.print("[SYNC] HTTP Response code: ");
-      Serial.println(httpCode);
-      Serial.print("[SYNC] Payload: ");
-      Serial.println(payload);
-
       if (httpCode == HTTP_CODE_OK) {
         DeserializationError error = deserializeJson(scheduleDoc, payload);
         if (error) {
@@ -235,11 +229,14 @@ void syncSchedule() {
           Serial.println("[SYNC] Schedule updated successfully.");
           testBellActive = scheduleDoc["test_bell_active"].as<bool>();
         }
+      } else {
+        Serial.print("[ERROR] HTTP request failed with code: ");
+        Serial.println(httpCode);
+        Serial.println(payload);
       }
     } else {
       Serial.printf("[ERROR] HTTP POST failed, error: %s\n", http.errorToString(httpCode).c_str());
     }
-
     http.end();
   } else {
     Serial.println("[ERROR] Unable to begin HTTP connection to Edge Function.");
@@ -251,23 +248,32 @@ void syncSchedule() {
 // =================================================================
 
 void ringBell() {
-  Serial.println("[BELL] Ringing bell!");
+  Serial.println("[BELL] Ringing scheduled bell!");
   digitalWrite(LED_PIN, LOW);
   digitalWrite(BELL_PIN, HIGH);
-  delay(2000);
+  delay(2000); // Ring for 2 seconds
   digitalWrite(BELL_PIN, LOW);
   digitalWrite(LED_PIN, HIGH);
   Serial.println("[BELL] Bell sequence finished.");
 }
 
+void ringTestBell() {
+  Serial.println("[BELL] Ringing TEST bell for 30 seconds!");
+  digitalWrite(LED_PIN, LOW);
+  digitalWrite(BELL_PIN, HIGH);
+  delay(30000); // Ring for 30 seconds
+  digitalWrite(BELL_PIN, LOW);
+  digitalWrite(LED_PIN, HIGH);
+  Serial.println("[BELL] Test bell sequence finished.");
+}
+
 void checkSchedule() {
   if (!timeClient.isTimeSet()) {
-    Serial.println("[WARN] Time not synced yet.");
     return;
   }
 
   if (testBellActive) {
-    ringBell();
+    ringTestBell();
     testBellActive = false;
   }
 
@@ -307,7 +313,7 @@ void checkSchedule() {
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("\n\n[INFO] Smart Bell Scheduler v2.3 Starting...");
+  Serial.println("\n\n[INFO] Smart Bell Scheduler v2.4 Starting...");
 
   pinMode(BELL_PIN, OUTPUT);
   pinMode(LED_PIN, OUTPUT);
