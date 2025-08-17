@@ -19,10 +19,10 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const user_id = body.user_id;
+    const schedule_id = body.schedule_id;
 
-    if (!user_id || typeof user_id !== 'string' || user_id.trim() === '') {
-      return new Response(JSON.stringify({ error: "A valid 'user_id' is required." }), {
+    if (!schedule_id || typeof schedule_id !== 'string' || schedule_id.trim() === '') {
+      return new Response(JSON.stringify({ error: "A valid 'schedule_id' is required." }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
@@ -36,7 +36,7 @@ serve(async (req) => {
     const { data: testBell, error: fetchError } = await supabaseAdmin
       .from("test_bells")
       .select("is_active, triggered_at")
-      .eq("user_id", user_id)
+      .eq("schedule_id", schedule_id)
       .single();
 
     if (fetchError && fetchError.code !== 'PGRST116') {
@@ -55,17 +55,15 @@ serve(async (req) => {
     const now = new Date().getTime();
 
     if (now - triggerTime < TEST_DURATION_MS) {
-      // Test is active and within the valid time window.
       return new Response(JSON.stringify({ test_bell_active: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
     } else {
-      // Test has expired. Auto-disable it in the database.
       await supabaseAdmin
         .from("test_bells")
         .update({ is_active: false })
-        .eq("user_id", user_id);
+        .eq("schedule_id", schedule_id);
       
       return new Response(JSON.stringify({ test_bell_active: false }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
