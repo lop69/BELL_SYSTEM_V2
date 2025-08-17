@@ -10,8 +10,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthProvider";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 import { Bell, Schedule } from "@/types/database";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type GroupedSchedule = {
   scheduleName: string;
@@ -48,22 +46,10 @@ const Dashboard = () => {
   const [todayGroupedSchedule, setTodayGroupedSchedule] = useState<GroupedSchedule[]>([]);
   const [nextBell, setNextBell] = useState<{ time: Date; label: string } | null>(null);
   const [countdown, setCountdown] = useState('00:00:00');
-  const [schedules, setSchedules] = useState<Schedule[]>([]);
-  const [isTestDialogOpen, setIsTestDialogOpen] = useState(false);
-  const [selectedTestSchedule, setSelectedTestSchedule] = useState<string>("");
   const timeZone = "Asia/Kolkata";
 
   useEffect(() => {
     if (!user) return;
-
-    const fetchSchedulesForTest = async () => {
-      const { data, error } = await supabase.from('schedules').select('*').eq('user_id', user.id);
-      if (error) {
-        showError("Could not load schedules for testing.");
-      } else {
-        setSchedules(data || []);
-      }
-    };
 
     const fetchFullSchedule = async () => {
       const todayIndex = new Date().getDay();
@@ -80,7 +66,6 @@ const Dashboard = () => {
       setTodayGroupedSchedule(grouped);
     };
 
-    fetchSchedulesForTest();
     fetchFullSchedule();
   }, [user]);
 
@@ -110,19 +95,15 @@ const Dashboard = () => {
   }, [todayGroupedSchedule]);
 
   const handleTestBell = async () => {
-    if (!selectedTestSchedule) { showError("Please select a schedule to test."); return; }
     const toastId = showLoading("Sending test signal...");
     try {
-      const { error } = await supabase.from("test_bells").upsert({
-        schedule_id: selectedTestSchedule,
-        is_active: true,
-        triggered_at: new Date().toISOString()
-      }, { onConflict: 'schedule_id' });
+      const { error } = await supabase.functions.invoke("global-test-bell", {
+        method: 'POST',
+      });
       if (error) throw error;
-      showSuccess("Test signal sent! The bell should ring for ~30 seconds.");
-      setIsTestDialogOpen(false);
+      showSuccess("Test signal sent! Any connected test device should ring.");
     } catch (error) {
-      showError("Failed to send test signal. Please ensure the device is configured.");
+      showError("Failed to send test signal. Please try again.");
     } finally {
       dismissToast(toastId);
     }
@@ -140,10 +121,7 @@ const Dashboard = () => {
         <motion.div variants={itemVariants}><Card className="glass-card p-4"><CardContent className="p-2 flex justify-around">
           <Button variant="ghost" className="flex flex-col h-auto" onClick={() => navigate('/app/schedules')}><Plus className="h-6 w-6 mb-1 text-sky-500" /><span className="text-xs">Add Bell</span></Button>
           <Button variant="ghost" className="flex flex-col h-auto" onClick={() => navigate('/app/schedules')}><Edit className="h-6 w-6 mb-1 text-indigo-500" /><span className="text-xs">Edit Schedule</span></Button>
-          <Dialog open={isTestDialogOpen} onOpenChange={setIsTestDialogOpen}>
-            <DialogTrigger asChild><Button variant="ghost" className="flex flex-col h-auto"><BellRing className="h-6 w-6 mb-1 text-green-500" /><span className="text-xs">Test Bell</span></Button></DialogTrigger>
-            <DialogContent className="glass-card"><DialogHeader><DialogTitle>Test a Device</DialogTitle><DialogDescription>Select which schedule to test. The associated bell will ring for 30 seconds.</DialogDescription></DialogHeader><div className="space-y-4 py-4"><Select value={selectedTestSchedule} onValueChange={setSelectedTestSchedule}><SelectTrigger><SelectValue placeholder="Select a schedule..." /></SelectTrigger><SelectContent>{schedules.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select><Button className="w-full gradient-button" onClick={handleTestBell} disabled={!selectedTestSchedule}><BellRing className="mr-2 h-4 w-4" /> Send Test Signal</Button></div></DialogContent>
-          </Dialog>
+          <Button variant="ghost" className="flex flex-col h-auto" onClick={handleTestBell}><BellRing className="h-6 w-6 mb-1 text-green-500" /><span className="text-xs">Test Bell</span></Button>
         </CardContent></Card></motion.div>
         <motion.div variants={itemVariants}><Card className="glass-card"><CardHeader><CardTitle className="flex items-center justify-between text-lg"><span>Today's Schedule</span><Calendar className="h-5 w-5 text-muted-foreground" /></CardTitle></CardHeader><CardContent className="space-y-4 text-sm">{todayGroupedSchedule.length > 0 ? todayGroupedSchedule.map(group => (<div key={group.scheduleName}><h3 className="font-semibold text-md mb-2 text-primary">{group.scheduleName}</h3><div className="space-y-3 pl-2 border-l-2">{group.bells.map(bell => { const [hours, minutes] = bell.time.split(':').map(Number); const bellDate = new Date(); bellDate.setHours(hours, minutes); return (<div key={bell.id} className="flex items-center gap-4"><span className="font-semibold text-primary w-20">{formatInTimeZone(bellDate, timeZone, 'hh:mm a')}</span><p>{bell.label}</p></div>); })}</div></div>)) : (<div className="text-center p-4"><p className="text-muted-foreground mb-4">No bells scheduled for today.</p><Button onClick={() => navigate('/app/schedules')}><Plus className="mr-2 h-4 w-4" /> Create a Schedule</Button></div>)}</CardContent></Card></motion.div>
       </motion.div>

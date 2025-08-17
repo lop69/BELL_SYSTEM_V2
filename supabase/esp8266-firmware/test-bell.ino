@@ -1,10 +1,10 @@
 /*
- * Smart Bell Scheduler - HARDWARE TEST FIRMWARE v1.7 (Schedule-Based Testing)
+ * Smart Bell Scheduler - UNIVERSAL TEST FIRMWARE v2.0
  *
- * CHANGELOG v1.7:
- * - Removed USER_ID requirement. Testing is now based on SCHEDULE_ID.
- * - This makes the test firmware much easier to configure.
- * - Updated instructions to guide user to find the Schedule ID in the app.
+ * CHANGELOG v2.0:
+ * - Simplified! No longer requires a Schedule ID.
+ * - This firmware works for any user to test any bell hardware.
+ * - Just add your WiFi details, upload, and trigger from the app.
 */
 
 // LIBRARIES
@@ -17,28 +17,22 @@
 // >>>>>>>>>> USER CONFIGURATION - FILL IN YOUR DETAILS HERE <<<<<<<<<<
 // =================================================================
 
-// STEP 1: Open the Smart Bell Scheduler app and go to the 'Connection' page.
-// STEP 2: In 'Step 2: Send Configuration', select the schedule you want this device to run.
-// STEP 3: A box will appear showing the 'Selected Schedule ID'.
-// STEP 4: Copy this ID and paste it below, replacing "YOUR_SCHEDULE_ID".
-
 const char* WIFI_SSID = "YOUR_WIFI_SSID";         // <-- REPLACE with your WiFi network name
 const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";     // <-- REPLACE with your WiFi password
-const char* SCHEDULE_ID = "YOUR_SCHEDULE_ID";       // <-- PASTE your Schedule ID from the app here
 
 // =================================================================
 // SUPABASE CONFIGURATION (DO NOT CHANGE)
 // =================================================================
 
 const char* SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRrcmdiY2ZpZGdneGlvaXp2a2VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzNDgzOTUsImV4cCI6MjA3MDkyNDM5NX0.eTzeTrcYRG3JemHh-N-rSRcHkMAdp2Afnt20Ft---ZA";
-const char* SUPABASE_EDGE_URL = "https://tkrgbcfidggxioizvkeq.supabase.co/functions/v1/test-bell-check";
+const char* SUPABASE_EDGE_URL = "https://tkrgbcfidggxioizvkeq.supabase.co/functions/v1/global-test-bell";
 
 // =================================================================
 
 const int BELL_PIN = D1;
 const int LED_PIN = LED_BUILTIN;
 unsigned long lastSyncTime = 0;
-const long syncInterval = 5000;
+const long syncInterval = 5000; // Check every 5 seconds
 
 void connectToWiFi() {
   Serial.print("[WIFI] Connecting to ");
@@ -53,16 +47,16 @@ void connectToWiFi() {
   Serial.println("\n[WIFI] Connected!");
   Serial.print("[WIFI] IP: ");
   Serial.println(WiFi.localIP());
-  digitalWrite(LED_PIN, HIGH);
+  digitalWrite(LED_PIN, HIGH); // Turn LED off (HIGH is off for built-in)
 }
 
 void ringTestBell() {
   Serial.println("[BELL] Test signal received! Ringing bell for 30 seconds.");
-  digitalWrite(LED_PIN, LOW);
+  digitalWrite(LED_PIN, LOW); // Turn LED on
   digitalWrite(BELL_PIN, HIGH);
   delay(30000);
   digitalWrite(BELL_PIN, LOW);
-  digitalWrite(LED_PIN, HIGH);
+  digitalWrite(LED_PIN, HIGH); // Turn LED off
   Serial.println("[BELL] Test complete.");
 }
 
@@ -72,20 +66,15 @@ void checkTestBellStatus() {
   
   WiFiClientSecure client;
   HTTPClient http;
-  client.setInsecure();
+  client.setInsecure(); // Bypass SSL certificate validation
 
   if (http.begin(client, SUPABASE_EDGE_URL)) {
     http.setTimeout(10000);
-    http.addHeader("Content-Type", "application/json");
     http.addHeader("apikey", SUPABASE_ANON_KEY);
     http.addHeader("Authorization", "Bearer " + String(SUPABASE_ANON_KEY));
 
-    JsonDocument requestBody;
-    requestBody["schedule_id"] = SCHEDULE_ID; // Use schedule_id now
-    String requestBodyString;
-    serializeJson(requestBody, requestBodyString);
-
-    int httpCode = http.POST(requestBodyString);
+    int httpCode = http.GET(); // Simple GET request, no body needed
+    
     if (httpCode == HTTP_CODE_OK) {
       JsonDocument doc;
       deserializeJson(doc, http.getString());
@@ -106,24 +95,22 @@ void checkTestBellStatus() {
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("\n\n[INFO] Hardware Test Firmware v1.7");
+  Serial.println("\n\n[INFO] Universal Test Firmware v2.0");
 
   pinMode(BELL_PIN, OUTPUT);
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(BELL_PIN, LOW);
-  digitalWrite(LED_PIN, HIGH);
+  digitalWrite(LED_PIN, HIGH); // LED off
 
   if (strcmp(WIFI_SSID, "YOUR_WIFI_SSID") == 0 || 
-      strcmp(WIFI_PASSWORD, "YOUR_WIFI_PASSWORD") == 0 || 
-      strcmp(SCHEDULE_ID, "YOUR_SCHEDULE_ID") == 0) {
+      strcmp(WIFI_PASSWORD, "YOUR_WIFI_PASSWORD") == 0) {
     Serial.println("\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-    Serial.println("[FATAL ERROR] Configuration placeholders detected.");
-    Serial.println("Please open 'test-bell.ino' and replace placeholders.");
-    Serial.println("You can find the SCHEDULE_ID on the Connection page of the app.");
+    Serial.println("[FATAL ERROR] WiFi details are missing.");
+    Serial.println("Please open 'test-bell.ino' and add your WiFi credentials.");
     Serial.println("Halting execution until code is updated.");
     Serial.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
     while(true) {
-      digitalWrite(LED_PIN, !digitalRead(LED_PIN));
+      digitalWrite(LED_PIN, !digitalRead(LED_PIN)); // Blink LED rapidly
       delay(100);
     }
   }
