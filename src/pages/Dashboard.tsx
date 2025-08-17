@@ -1,10 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, Plus, Edit, Clock } from "lucide-react";
+import { Calendar, Plus, Edit, Clock, BellRing } from "lucide-react";
 import { motion, Variants } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { format, differenceInMilliseconds } from "date-fns";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthProvider";
+import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 
 const containerVariants: Variants = {
   hidden: { opacity: 1 },
@@ -40,9 +43,11 @@ const todaySchedule = [
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [nextBell, setNextBell] = useState<{ time: Date; label: string } | null>(null);
   const [countdown, setCountdown] = useState('00:00:00');
+  const [isTestBellActive, setIsTestBellActive] = useState(false);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -77,6 +82,68 @@ const Dashboard = () => {
 
     return () => clearInterval(timer);
   }, []);
+
+  const handleTestBell = async () => {
+    if (!user) {
+      showError("Please log in to test the bell.");
+      return;
+    }
+
+    setIsTestBellActive(true);
+    const toastId = showLoading("Activating test bell for 30 seconds...");
+
+    try {
+      // Check if an entry exists for the user
+      const { data: existingBell, error: fetchError } = await supabase
+        .from('test_bells')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 means no rows found
+        throw fetchError;
+      }
+
+      if (existingBell) {
+        // Update existing entry
+        const { error: updateError } = await supabase
+          .from('test_bells')
+          .update({ is_active: true, triggered_at: new Date().toISOString() })
+          .eq('id', existingBell.id);
+        if (updateError) throw updateError;
+      } else {
+        // Insert new entry
+        const { error: insertError } = await supabase
+          .from('test_bells')
+          .insert({ user_id: user.id, is_active: true, triggered_at: new Date().toISOString() });
+        if (insertError) throw insertError;
+      }
+
+      showSuccess("Test bell activated!");
+
+      setTimeout(async () => {
+        try {
+          const { error: deactivateError } = await supabase
+            .from('test_bells')
+            .update({ is_active: false })
+            .eq('user_id', user.id);
+          if (deactivateError) throw deactivateError;
+          showSuccess("Test bell deactivated.");
+        } catch (error) {
+          showError("Failed to deactivate test bell.");
+          console.error("Error deactivating test bell:", error);
+        } finally {
+          dismissToast(toastId);
+          setIsTestBellActive(false);
+        }
+      }, 30000); // 30 seconds
+    } catch (error) {
+      dismissToast(toastId);
+      showError("Failed to activate test bell.");
+      console.error("Error activating test bell:", error);
+      setIsTestBellActive(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -133,6 +200,15 @@ const Dashboard = () => {
               <Button variant="ghost" className="flex flex-col h-auto" onClick={() => navigate('/app/schedules')}>
                 <Edit className="h-6 w-6 mb-1 text-indigo-500" />
                 <span className="text-xs">Edit Schedule</span>
+              </Button>
+              <Button 
+                variant="ghost" 
+                className="flex flex-col h-auto" 
+                onClick={handleTestBell}
+                disabled={isTestBellActive}
+              >
+                <BellRing className={`h-6 w-6 mb-1 ${isTestBellActive ? 'text-yellow-500 animate-pulse' : 'text-green-500'}`} />
+                <span className="text-xs">Test Bell</span>
               </Button>
             </CardContent>
           </Card>
