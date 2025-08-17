@@ -67,6 +67,7 @@ const Login = () => {
     handleSubmit,
     formState: { errors },
     trigger, // To manually trigger validation
+    setValue,
   } = useForm<LoginFormInputs>({
     resolver: zodResolver(loginSchema),
   });
@@ -95,6 +96,11 @@ const Login = () => {
       showSuccess("Logged in successfully!");
       navigate("/app");
     }
+  };
+
+  const handleFillDemoCredentials = () => {
+    setValue("email", "demo@example.com");
+    setValue("password", "demo123");
   };
 
   return (
@@ -216,7 +222,14 @@ const Login = () => {
 
          
 
-          <motion.div variants={itemVariants} className="mt-4 text-center">
+          <motion.div variants={itemVariants} className="mt-4 text-center space-y-2">
+            <Button
+              variant="outline"
+              className="w-full bg-white/50 border-gray-300/50 hover:bg-white/80 text-primary rounded-lg transition-transform transform hover:scale-105"
+              onClick={handleFillDemoCredentials}
+            >
+              Use Demo Credentials
+            </Button>
             <Button
               variant="outline"
               className="w-full bg-white/50 border-gray-300/50 hover:bg-white/80 text-primary rounded-lg transition-transform transform hover:scale-105"
