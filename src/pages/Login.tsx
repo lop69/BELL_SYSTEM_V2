@@ -214,15 +214,7 @@ const Login = () => {
             />
           </motion.div>
 
-          <motion.div variants={itemVariants} className="mt-6 text-center">
-            <Button
-              variant="link"
-              className="text-primary hover:text-sky-600"
-              onClick={() => navigate('/signup')}
-            >
-              Don’t have an account? Sign up.
-            </Button>
-          </motion.div>
+         
 
           <motion.div variants={itemVariants} className="mt-4 text-center">
             <Button
