@@ -53,9 +53,19 @@ const Login = () => {
       >
         <div className="glass-card p-8">
           <motion.div variants={itemVariants} className="text-center mb-8">
-            <div className="inline-block p-4 bg-primary/10 rounded-full mb-4">
-              <BellRing className="h-8 w-8 text-primary" />
-            </div>
+            <motion.div
+              className="inline-block p-5 bg-primary/10 rounded-full mb-4 shadow-lg"
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.3 }}
+            >
+              <motion.div
+                animate={{ rotate: [0, -10, 10, -5, 5, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3, ease: "easeInOut" }}
+              >
+                <BellRing className="h-10 w-10 text-primary" />
+              </motion.div>
+            </motion.div>
             <h1 className="text-3xl font-bold text-primary">Welcome Back</h1>
             <p className="text-muted-foreground mt-1">Sign in to continue</p>
           </motion.div>
