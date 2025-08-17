@@ -1,13 +1,13 @@
 /*
- * Smart Bell Scheduler - HARDWARE TEST FIRMWARE v1.2 (Robust Edition)
+ * Smart Bell Scheduler - HARDWARE TEST FIRMWARE v1.3 (Ultra-Robust Edition)
  *
- * CHANGELOG v1.2:
- * - Pre-flight Check: The firmware will now refuse to run if you haven't replaced
- *   the placeholder WiFi and Schedule ID values. It will print an error in the
- *   Serial Monitor until you update the code. This prevents 400/500 errors.
- * - Graceful Error Handling: Provides clear, human-readable error messages in the
- *   Serial Monitor for different HTTP status codes (e.g., 400, 404, 500).
- * - Improved Logging: More detailed serial output to make debugging easier.
+ * CHANGELOG v1.3:
+ * - Added HTTP Timeout: Sets a 10-second timeout for server requests to prevent
+ *   the `-11` (read error) by making the device more patient with network lag.
+ * - Specific Error Code Handling: Now provides a clear explanation for the `-11`
+ *   error code in the Serial Monitor.
+ * - Retained Pre-flight Check: Still includes the critical check to prevent running
+ *   with placeholder values, which is the cause of the `400` error.
 */
 
 // LIBRARIES
@@ -43,6 +43,7 @@ const long syncInterval = 5000; // Check for test signal every 5 seconds
 void connectToWiFi() {
   Serial.print("[WIFI] Connecting to ");
   Serial.println(WIFI_SSID);
+  WiFi.mode(WIFI_STA);
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
   while (WiFi.status() != WL_CONNECTED) {
@@ -76,6 +77,7 @@ void checkTestBellStatus() {
   HTTPClient http;
 
   if (http.begin(client, SUPABASE_EDGE_URL)) {
+    http.setTimeout(10000); // Set a 10-second timeout for the request
     http.addHeader("Content-Type", "application/json");
     http.addHeader("apikey", SUPABASE_ANON_KEY);
     http.addHeader("Authorization", "Bearer " + String(SUPABASE_ANON_KEY));
@@ -102,9 +104,13 @@ void checkTestBellStatus() {
       Serial.println("[ERROR] Server Response: " + payload);
       
       if (httpCode == 400) {
-        Serial.println("[HINT] Bad Request (400). The server rejected the data. This can happen if the SCHEDULE_ID is an empty string.");
+        Serial.println("[HINT] Bad Request (400). The server rejected the data. This can happen if the SCHEDULE_ID is an empty string or invalid.");
       } else if (httpCode == 404) {
         Serial.println("[HINT] Not Found (404). The SCHEDULE_ID you provided does not exist in the database. Please double-check it.");
+      } else if (httpCode == -11) { // HTTPC_ERROR_READ
+        Serial.println("[HINT] Read Timeout (-11). The device connected to the server but failed to read the response in time. This is usually a temporary network issue. It will try again.");
+      } else if (httpCode < 0) {
+        Serial.println("[HINT] This is a client-side error. Check your WiFi connection and ensure the server URL is correct.");
       } else if (httpCode >= 500) {
         Serial.println("[HINT] Server Error (5xx). There is an issue with the Supabase Edge Function. Check the function logs in your Supabase dashboard.");
       }
@@ -117,7 +123,7 @@ void checkTestBellStatus() {
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("\n\n[INFO] Hardware Test Firmware v1.2");
+  Serial.println("\n\n[INFO] Hardware Test Firmware v1.3");
 
   pinMode(BELL_PIN, OUTPUT);
   pinMode(LED_PIN, OUTPUT);
