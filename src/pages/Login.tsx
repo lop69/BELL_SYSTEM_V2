@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,12 @@ const Login = () => {
     resolver: zodResolver(loginSchema),
   });
 
+  useEffect(() => {
+    if (session) {
+      navigate("/app");
+    }
+  }, [session, navigate]);
+
   const onSubmit = async (data: LoginFormInputs) => {
     setIsSubmitting(true);
     const toastId = showLoading("Logging in...");
@@ -60,18 +66,13 @@ const Login = () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin,
+        redirectTo: `${window.location.origin}/app`,
       },
     });
     if (error) {
       showError(`Google sign-in failed: ${error.message}`);
     }
   };
-
-  // Redirect if already logged in
-  if (session) {
-    navigate("/app");
-  }
 
   return (
     <div className="min-h-screen main-gradient p-4 flex flex-col items-center justify-center">
