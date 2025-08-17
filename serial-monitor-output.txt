@@ -1,0 +1,4 @@
+[INFO] Smart Bell Scheduler v2.1 Starting...
+[SETUP] Starting configuration server.
+[SETUP] Connect to WiFi 'SmartBell-Config' (password: 'password')
+[SETUP] Then open 192.168.4.1 in a browser.
