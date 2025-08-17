@@ -141,14 +141,12 @@ const Dashboard = () => {
 
       showSuccess("Test signal sent! The bell should ring shortly.");
 
-      // The device will see the 'is_active: true' flag on its next sync.
-      // We set it back to false after a delay to ensure it doesn't get stuck.
       setTimeout(async () => {
         await supabase
           .from("test_bells")
           .update({ is_active: false })
           .eq("user_id", user.id);
-      }, 10000); // Reset after 10 seconds just in case.
+      }, 10000);
 
     } catch (error) {
       showError("Failed to send test signal.");
@@ -243,7 +241,12 @@ const Dashboard = () => {
                   </div>
                 </div>
               )) : (
-                <p className="text-muted-foreground text-center p-4">No bells scheduled for today.</p>
+                <div className="text-center p-4">
+                  <p className="text-muted-foreground mb-4">No bells scheduled for today.</p>
+                  <Button onClick={() => navigate('/app/schedules')}>
+                    <Plus className="mr-2 h-4 w-4" /> Create a Schedule
+                  </Button>
+                </div>
               )}
             </CardContent>
           </Card>

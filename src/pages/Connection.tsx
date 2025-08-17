@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wifi, CheckCircle, XCircle, Loader, AlertTriangle, WifiOff, KeyRound, Tag, Info, BellRing, Signal } from "lucide-react";
+import { Wifi, CheckCircle, XCircle, Loader, AlertTriangle, WifiOff, KeyRound, Tag, Info, BellRing, Signal, HelpCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { showLoading, dismissToast, showSuccess, showError } from "@/utils/toast";
 import { useAuth } from "@/contexts/AuthProvider";
@@ -47,6 +47,15 @@ const Connection = () => {
     } catch (error) {
       showError(`Failed to communicate with device at ${configModeIp}. Ensure you are connected to its 'SmartBell-Config' WiFi and have disabled mobile data.`);
       return null;
+    }
+  };
+
+  const handleStatusCheck = async () => {
+    const toastId = showLoading("Pinging device...");
+    const response = await sendCommandToESP("status");
+    dismissToast(toastId);
+    if (response && response.status === 'ready') {
+      showSuccess("Device is connected and ready for configuration!");
     }
   };
 
@@ -135,6 +144,7 @@ const Connection = () => {
             <p>To configure your device, first connect your phone to its temporary WiFi network.</p>
             <p><strong>Network Name:</strong> <code className="font-mono bg-muted p-1 rounded-md">SmartBell-Config</code></p>
             <p><strong>Password:</strong> <code className="font-mono bg-muted p-1 rounded-md">password</code></p>
+            <Button variant="outline" size="sm" className="mt-2" onClick={handleStatusCheck}><HelpCircle className="mr-2 h-4 w-4" />Check Device Status</Button>
           </CardContent>
         </Card>
       </motion.div>
@@ -145,8 +155,8 @@ const Connection = () => {
             <CardTitle className="flex items-center gap-2 text-orange-500"><AlertTriangle className="h-5 w-5" />Important: Troubleshooting</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground space-y-2">
-            <p>If you see a "Failed to send" error, it's likely because your phone disconnected from the device's WiFi.</p>
-            <p><strong>Solution:</strong> Before proceeding to Step 2, **temporarily disable Mobile/Cellular Data** on your phone. This forces it to stay connected to `SmartBell-Config`.</p>
+            <p>If you see a "Failed to communicate" error, it's likely because your phone disconnected from the device's WiFi.</p>
+            <p><strong>Solution:</strong> Before proceeding, **temporarily disable Mobile/Cellular Data** on your phone. This forces it to stay connected to `SmartBell-Config`.</p>
           </CardContent>
         </Card>
       </motion.div>

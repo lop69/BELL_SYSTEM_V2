@@ -1,13 +1,19 @@
 /*
- * Smart Bell Scheduler - Production Firmware v2.4 (Performance & Test Bell)
+ * Smart Bell Scheduler - Production Firmware v2.5 (Robustness & Final Polish)
  *
- * This firmware works with the Dyad-generated web application to create a configurable,
- * network-connected bell system.
+ * This firmware is designed for maximum reliability and resilience.
  *
  * CHANGELOG:
- * v2.4 - Reduced communication delay: Sync interval with Supabase lowered to 5 seconds.
- *      - Implemented a dedicated 30-second ring duration for the Test Bell feature.
- *      - Separated regular bell ring logic (2 seconds) from test bell logic.
+ * v2.5 - FINAL POLISH
+ *      - Heartbeat LED: The onboard LED now "breathes" to show the main loop is running.
+ *        It turns solid during network activity for clear visual feedback.
+ *      - Auto-Reboot Watchdog: If the device fails to sync with Supabase for 5 minutes,
+ *        it will automatically reboot to recover from network or state lock-ups.
+ *      - Safer JSON Parsing: Added checks to ensure JSON data from Supabase is valid
+ *        and contains the expected fields before trying to use it, preventing crashes.
+ *      - Status Check Endpoint: Added a '/status' endpoint to the config server, allowing
+ *        the app to verify connection before sending credentials.
+ *      - Improved Serial Logging: Cleaner, more descriptive logs for easier debugging.
  *
  * FEATURES:
  * - Configuration Mode: Creates a WiFi hotspot ("SmartBell-Config") for initial setup.
@@ -18,10 +24,6 @@
  * - Test Bell Functionality: Listens for a "test bell" command from the app.
  * - Status LED: Provides clear visual feedback on the device's state.
  * - Auto-Reconnect: If WiFi is lost, it will continuously try to reconnect.
- *
- * REQUIRED LIBRARIES (Install via Arduino IDE Library Manager):
- * 1. ArduinoJson (by Benoit Blanchon)
- * 2. NTPClient (by Fabrice Weinberg)
 */
 
 // LIBRARIES
@@ -34,8 +36,8 @@
 #include <WiFiUdp.h>
 
 // PIN DEFINITIONS
-const int BELL_PIN = D1; // Relay is connected to pin D1
-const int LED_PIN = LED_BUILTIN; // Onboard blue LED
+const int BELL_PIN = D1;
+const int LED_PIN = LED_BUILTIN;
 
 // CONFIGURATION CONSTANTS
 const char* CONFIG_AP_SSID = "SmartBell-Config";
@@ -48,7 +50,7 @@ struct Configuration {
   char anon_key[256];
   char edge_url[256];
   char schedule_id[64];
-  bool configured; // A flag to check if the device has been configured
+  bool configured;
 };
 
 Configuration config;
@@ -56,12 +58,16 @@ ESP8266WebServer server(80);
 
 // TIME & SCHEDULE VARIABLES
 WiFiUDP ntpUDP;
-NTPClient timeClient(ntpUDP, "pool.ntp.org", 19800, 60000); // IST is UTC +5:30 (19800 seconds)
+NTPClient timeClient(ntpUDP, "pool.ntp.org", 19800, 60000);
 
-JsonDocument scheduleDoc; // Holds the bell schedule fetched from Supabase
+JsonDocument scheduleDoc;
 bool testBellActive = false;
 unsigned long lastSyncTime = 0;
-const long syncInterval = 5000; // Sync with Supabase every 5 seconds for high responsiveness
+const long syncInterval = 5000; // Sync every 5 seconds
+
+// WATCHDOG TIMER
+unsigned long lastSuccessfulSync = 0;
+const long watchdogTimeout = 300000; // 5 minutes
 
 // =================================================================
 // EEPROM & CONFIGURATION MANAGEMENT
@@ -72,31 +78,29 @@ void saveConfig() {
   EEPROM.put(0, config);
   EEPROM.commit();
   EEPROM.end();
-  Serial.println("[INFO] Configuration saved to EEPROM.");
+  Serial.println("[INFO] Configuration saved.");
 }
 
 void loadConfig() {
   EEPROM.begin(sizeof(Configuration));
   EEPROM.get(0, config);
   EEPROM.end();
-  Serial.println("[INFO] Configuration loaded from EEPROM.");
-  if (config.configured) {
-    Serial.println("[INFO] Device is configured.");
-  } else {
-    Serial.println("[WARN] Device is not configured. Starting config portal.");
+  Serial.println("[INFO] Configuration loaded.");
+  if (!config.configured) {
+    Serial.println("[WARN] Device not configured.");
   }
 }
 
 void clearConfig() {
   config.configured = false;
   saveConfig();
-  Serial.println("[WARN] Configuration cleared. Restarting device.");
+  Serial.println("[WARN] Configuration cleared. Restarting.");
   delay(1000);
   ESP.restart();
 }
 
 // =================================================================
-// INITIAL SETUP & CONFIGURATION PORTAL
+// CONFIGURATION PORTAL
 // =================================================================
 
 void addCorsHeaders() {
@@ -110,20 +114,22 @@ void handleOptions() {
   server.send(204);
 }
 
+void handleStatus() {
+  addCorsHeaders();
+  server.send(200, "application/json", "{\"status\":\"ready\"}");
+  Serial.println("[SETUP] Status check received.");
+}
+
 void handleConfig() {
   addCorsHeaders();
-  if (server.hasArg("plain") == false) {
-    server.send(400, "text/plain", "Body not received");
+  if (!server.hasArg("plain")) {
+    server.send(400, "application/json", "{\"status\":\"error\", \"message\":\"Body not received\"}");
     return;
   }
 
-  String body = server.arg("plain");
   JsonDocument doc;
-  DeserializationError error = deserializeJson(doc, body);
-
+  DeserializationError error = deserializeJson(doc, server.arg("plain"));
   if (error) {
-    Serial.print(F("deserializeJson() failed: "));
-    Serial.println(error.c_str());
     server.send(400, "application/json", "{\"status\":\"error\", \"message\":\"Invalid JSON\"}");
     return;
   }
@@ -136,26 +142,24 @@ void handleConfig() {
   config.configured = true;
 
   saveConfig();
-
   server.send(200, "application/json", "{\"status\":\"ok\"}");
-  Serial.println("[SUCCESS] Configuration received and saved. Restarting in 3 seconds...");
+  Serial.println("[SUCCESS] Config received. Restarting in 3s.");
   delay(3000);
   ESP.restart();
 }
 
 void startConfigPortal() {
-  digitalWrite(LED_PIN, HIGH);
-  Serial.println("[SETUP] Starting configuration server.");
+  digitalWrite(LED_PIN, LOW); // Turn LED on
+  Serial.println("[SETUP] Starting configuration portal.");
   WiFi.softAP(CONFIG_AP_SSID, CONFIG_AP_PASSWORD);
-  IPAddress apIP = WiFi.softAPIP();
-  Serial.print("[SETUP] AP IP address: ");
-  Serial.println(apIP);
+  Serial.print("[SETUP] AP IP: ");
+  Serial.println(WiFi.softAPIP());
 
   server.on("/config", HTTP_POST, handleConfig);
+  server.on("/status", HTTP_GET, handleStatus);
   server.on("/config", HTTP_OPTIONS, handleOptions);
+  server.on("/status", HTTP_OPTIONS, handleOptions);
   server.begin();
-
-  Serial.println("[SETUP] Connect to WiFi 'SmartBell-Config' (password: 'password')");
 
   while (true) {
     server.handleClient();
@@ -164,13 +168,12 @@ void startConfigPortal() {
 }
 
 // =================================================================
-// WIFI & NETWORK OPERATIONS
+// WIFI & NETWORK
 // =================================================================
 
 void connectToWiFi() {
   Serial.print("[WIFI] Connecting to ");
   Serial.println(config.ssid);
-
   WiFi.begin(config.ssid, config.password);
 
   int attempts = 0;
@@ -183,25 +186,23 @@ void connectToWiFi() {
 
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("\n[WIFI] Connected!");
-    Serial.print("[WIFI] IP address: ");
+    Serial.print("[WIFI] IP: ");
     Serial.println(WiFi.localIP());
-    digitalWrite(LED_PIN, HIGH);
   } else {
-    Serial.println("\n[WIFI] Failed to connect. Entering config mode.");
+    Serial.println("\n[WIFI] Failed to connect. Re-entering config mode.");
     clearConfig();
   }
 }
 
 // =================================================================
-// SUPABASE & SCHEDULE SYNC
+// SUPABASE SYNC
 // =================================================================
 
 void syncSchedule() {
-  if (WiFi.status() != WL_CONNECTED) {
-    return;
-  }
+  if (WiFi.status() != WL_CONNECTED) return;
 
-  Serial.println("[SYNC] Fetching schedule from Supabase...");
+  digitalWrite(LED_PIN, LOW); // Solid LED during sync
+  Serial.println("[SYNC] Fetching schedule...");
   
   WiFiClient client;
   HTTPClient http;
@@ -217,88 +218,62 @@ void syncSchedule() {
     serializeJson(requestBody, requestBodyString);
 
     int httpCode = http.POST(requestBodyString);
-
-    if (httpCode > 0) {
-      String payload = http.getString();
-      if (httpCode == HTTP_CODE_OK) {
-        DeserializationError error = deserializeJson(scheduleDoc, payload);
-        if (error) {
-          Serial.print("[ERROR] Failed to parse schedule JSON: ");
-          Serial.println(error.c_str());
-        } else {
-          Serial.println("[SYNC] Schedule updated successfully.");
-          testBellActive = scheduleDoc["test_bell_active"].as<bool>();
-        }
+    if (httpCode == HTTP_CODE_OK) {
+      DeserializationError error = deserializeJson(scheduleDoc, http.getString());
+      if (error) {
+        Serial.print("[ERROR] JSON parsing failed: ");
+        Serial.println(error.c_str());
+      } else if (!scheduleDoc.containsKey("bells") || !scheduleDoc.containsKey("test_bell_active")) {
+        Serial.println("[ERROR] JSON response is missing required keys.");
       } else {
-        Serial.print("[ERROR] HTTP request failed with code: ");
-        Serial.println(httpCode);
-        Serial.println(payload);
+        Serial.println("[SYNC] Success.");
+        testBellActive = scheduleDoc["test_bell_active"].as<bool>();
+        lastSuccessfulSync = millis(); // Update watchdog timer
       }
     } else {
-      Serial.printf("[ERROR] HTTP POST failed, error: %s\n", http.errorToString(httpCode).c_str());
+      Serial.printf("[ERROR] HTTP POST failed, code: %d\n", httpCode);
     }
     http.end();
   } else {
-    Serial.println("[ERROR] Unable to begin HTTP connection to Edge Function.");
+    Serial.println("[ERROR] Unable to begin HTTP connection.");
   }
+  digitalWrite(LED_PIN, HIGH); // Turn LED off after sync
 }
 
 // =================================================================
-// CORE DEVICE LOGIC
+// CORE LOGIC
 // =================================================================
 
-void ringBell() {
-  Serial.println("[BELL] Ringing scheduled bell!");
-  digitalWrite(LED_PIN, LOW);
+void ringBell(int duration_ms, const char* reason) {
+  Serial.printf("[BELL] Ringing for %dms. Reason: %s\n", duration_ms, reason);
   digitalWrite(BELL_PIN, HIGH);
-  delay(2000); // Ring for 2 seconds
+  delay(duration_ms);
   digitalWrite(BELL_PIN, LOW);
-  digitalWrite(LED_PIN, HIGH);
-  Serial.println("[BELL] Bell sequence finished.");
-}
-
-void ringTestBell() {
-  Serial.println("[BELL] Ringing TEST bell for 30 seconds!");
-  digitalWrite(LED_PIN, LOW);
-  digitalWrite(BELL_PIN, HIGH);
-  delay(30000); // Ring for 30 seconds
-  digitalWrite(BELL_PIN, LOW);
-  digitalWrite(LED_PIN, HIGH);
-  Serial.println("[BELL] Test bell sequence finished.");
+  Serial.println("[BELL] Sequence finished.");
 }
 
 void checkSchedule() {
-  if (!timeClient.isTimeSet()) {
-    return;
-  }
+  if (!timeClient.isTimeSet()) return;
 
   if (testBellActive) {
-    ringTestBell();
+    ringBell(30000, "Test Signal");
     testBellActive = false;
   }
 
   JsonArray bells = scheduleDoc["bells"].as<JsonArray>();
-  if (bells.isNull()) {
-    return;
-  }
+  if (bells.isNull()) return;
 
   int currentDay = timeClient.getDay();
   String currentTime = timeClient.getFormattedTime().substring(0, 5);
-
   static String lastTriggeredTime = "";
 
-  if (currentTime == lastTriggeredTime) {
-    return;
-  }
+  if (currentTime == lastTriggeredTime) return;
 
   for (JsonObject bell : bells) {
-    String bellTime = bell["time"].as<String>().substring(0, 5);
-    JsonArray days = bell["days_of_week"].as<JsonArray>();
-
-    if (bellTime == currentTime) {
-      for (JsonVariant day : days) {
+    if (bell["time"].as<String>().substring(0, 5) == currentTime) {
+      for (JsonVariant day : bell["days_of_week"].as<JsonArray>()) {
         if (day.as<int>() == currentDay) {
-          ringBell();
+          ringBell(2000, "Scheduled");
           lastTriggeredTime = currentTime;
           return;
         }
@@ -307,18 +282,30 @@ void checkSchedule() {
   }
 }
 
+void ledHeartbeat() {
+  // A "breathing" LED to show the device is alive and running.
+  for (int i = 0; i < 255; i += 5) {
+    analogWrite(LED_PIN, i);
+    delay(1);
+  }
+  for (int i = 255; i > 0; i -= 5) {
+    analogWrite(LED_PIN, i);
+    delay(1);
+  }
+}
+
 // =================================================================
-// ARDUINO SETUP & LOOP
+// SETUP & LOOP
 // =================================================================
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("\n\n[INFO] Smart Bell Scheduler v2.4 Starting...");
+  Serial.println("\n\n[INFO] Smart Bell Scheduler v2.5 Starting...");
 
   pinMode(BELL_PIN, OUTPUT);
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(BELL_PIN, LOW);
-  digitalWrite(LED_PIN, HIGH);
+  digitalWrite(LED_PIN, HIGH); // LED off (HIGH is off for built-in)
 
   loadConfig();
 
@@ -329,35 +316,32 @@ void setup() {
     if (WiFi.status() == WL_CONNECTED) {
       timeClient.begin();
       timeClient.forceUpdate();
-      Serial.print("[TIME] Initial time sync: ");
-      Serial.println(timeClient.getFormattedTime());
+      lastSuccessfulSync = millis();
     }
   }
 }
 
 void loop() {
-  if (!config.configured) {
-    return;
-  }
+  if (!config.configured) return;
 
   if (WiFi.status() != WL_CONNECTED) {
-    Serial.println("[WIFI] Connection lost. Reconnecting...");
     connectToWiFi();
-  } else {
-    digitalWrite(LED_PIN, LOW);
-    delay(50);
-    digitalWrite(LED_PIN, HIGH);
-
-    timeClient.update();
-
-    unsigned long currentTime = millis();
-    if (currentTime - lastSyncTime >= syncInterval) {
-      lastSyncTime = currentTime;
-      syncSchedule();
-    }
-
-    checkSchedule();
   }
 
-  delay(1000);
+  timeClient.update();
+
+  unsigned long currentTime = millis();
+  if (currentTime - lastSyncTime >= syncInterval) {
+    lastSyncTime = currentTime;
+    syncSchedule();
+  }
+
+  checkSchedule();
+
+  if (currentTime - lastSuccessfulSync > watchdogTimeout) {
+    Serial.println("[WATCHDOG] No successful sync for 5 minutes. Rebooting.");
+    ESP.restart();
+  }
+  
+  ledHeartbeat();
 }
