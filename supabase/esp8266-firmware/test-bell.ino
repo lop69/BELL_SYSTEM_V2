@@ -1,16 +1,16 @@
 /*
- * Smart Bell Scheduler - HARDWARE TEST FIRMWARE v1.5 (User ID Edition)
+ * Smart Bell Scheduler - HARDWARE TEST FIRMWARE v1.6 (HTTPS Fix)
  *
- * CHANGELOG v1.5:
- * - Switched from Schedule ID to User ID for configuration, simplifying setup.
- * - Now uses a dedicated '/test-bell-check' edge function for improved reliability.
- * - Updated instructions to guide you to find your User ID in the Supabase dashboard.
+ * CHANGELOG v1.6:
+ * - Switched to WiFiClientSecure to enable proper HTTPS communication with Supabase.
+ * - This fixes the '400 Bad Request' error when connecting to edge functions.
 */
 
 // LIBRARIES
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <ArduinoJson.h>
+#include <WiFiClientSecure.h> // For HTTPS
 
 // =================================================================
 // >>>>>>>>>> USER CONFIGURATION - FILL IN YOUR DETAILS HERE <<<<<<<<<<
@@ -75,8 +75,13 @@ void checkTestBellStatus() {
 
   Serial.println("[SYNC] Checking for test signal...");
   
-  WiFiClient client;
+  // Use WiFiClientSecure for HTTPS connections
+  WiFiClientSecure client;
   HTTPClient http;
+
+  // Allow insecure connections to bypass certificate validation on the ESP8266
+  // This is often necessary as these devices have limited memory for root certificates.
+  client.setInsecure();
 
   if (http.begin(client, SUPABASE_EDGE_URL)) {
     http.setTimeout(10000); // Set a 10-second timeout for the request
@@ -112,7 +117,7 @@ void checkTestBellStatus() {
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("\n\n[INFO] Hardware Test Firmware v1.5");
+  Serial.println("\n\n[INFO] Hardware Test Firmware v1.6");
 
   pinMode(BELL_PIN, OUTPUT);
   pinMode(LED_PIN, OUTPUT);
