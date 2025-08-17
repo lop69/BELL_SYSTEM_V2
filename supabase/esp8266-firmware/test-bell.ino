@@ -1,5 +1,5 @@
 /*
- * Smart Bell Scheduler - HARDWARE TEST FIRMWARE v1.0
+ * Smart Bell Scheduler - HARDWARE TEST FIRMWARE v1.1
  *
  * PURPOSE:
  * This is a simplified firmware designed ONLY for testing the bell hardware.
@@ -15,7 +15,7 @@
  * 3. Open the Serial Monitor in the Arduino IDE (baud rate 115200).
  * 4. The device will connect to your WiFi.
  * 5. Go to your web app's dashboard and press the "Test Bell" button.
- * 6. The bell should ring for 5 seconds.
+ * 6. The bell should ring for 30 seconds.
  *
  * REQUIRED LIBRARIES (Install via Arduino IDE Library Manager):
  * 1. ArduinoJson (by Benoit Blanchon)
@@ -69,10 +69,10 @@ void connectToWiFi() {
 }
 
 void ringTestBell() {
-  Serial.println("[BELL] Test signal received! Ringing bell for 5 seconds.");
+  Serial.println("[BELL] Test signal received! Ringing bell for 30 seconds.");
   digitalWrite(LED_PIN, LOW); // LED On (indicates activity)
   digitalWrite(BELL_PIN, HIGH);
-  delay(5000); // Ring for 5 seconds for the test
+  delay(30000); // Ring for 30 seconds for the test
   digitalWrite(BELL_PIN, LOW);
   digitalWrite(LED_PIN, HIGH);
   Serial.println("[BELL] Test complete.");
@@ -117,7 +117,7 @@ void checkTestBellStatus() {
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("\n\n[INFO] Hardware Test Firmware v1.0");
+  Serial.println("\n\n[INFO] Hardware Test Firmware v1.1");
 
   pinMode(BELL_PIN, OUTPUT);
   pinMode(LED_PIN, OUTPUT);

@@ -106,14 +106,14 @@ const Connection = () => {
         .upsert({ user_id: user.id, is_active: true }, { onConflict: 'user_id' });
       if (activateError) throw activateError;
 
-      showSuccess("Test signal sent! The bell should ring within 30 seconds.");
+      showSuccess("Test signal sent! The bell should ring for 30 seconds.");
 
       setTimeout(async () => {
         await supabase
           .from("test_bells")
           .update({ is_active: false })
           .eq("user_id", user.id);
-      }, 30000);
+      }, 35000);
 
     } catch (error) {
       showError("Failed to send test signal.");
