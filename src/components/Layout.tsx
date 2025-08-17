@@ -15,12 +15,12 @@ const Layout = () => {
   ];
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="h-full">
       <Header />
       <AnimatePresence mode="wait">
         <motion.main
           key={location.pathname}
-          className="flex-1 flex-col gap-4 p-4 overflow-y-auto"
+          className="h-full overflow-y-auto p-4 pt-20 pb-20"
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -15 }}
@@ -29,7 +29,7 @@ const Layout = () => {
           <Outlet />
         </motion.main>
       </AnimatePresence>
-      <nav className="h-16 border-t border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/20 backdrop-blur-2xl flex-shrink-0">
+      <nav className="fixed bottom-0 left-0 right-0 h-16 border-t border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/20 backdrop-blur-2xl flex-shrink-0">
         <div className="flex justify-around h-full">
           {navItems.map((item) => (
             <NavLink

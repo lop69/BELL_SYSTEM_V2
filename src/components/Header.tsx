@@ -16,7 +16,7 @@ const Header = () => {
   const navigate = useNavigate();
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/20 backdrop-blur-2xl px-4">
+    <header className="fixed top-0 left-0 right-0 z-10 flex h-16 items-center gap-4 border-b border-white/20 dark:border-white/10 bg-white/40 dark:bg-black/20 backdrop-blur-2xl px-4">
       <div className="flex-1">
         <h1 className="text-base font-semibold">Smart Bell Scheduler</h1>
       </div>

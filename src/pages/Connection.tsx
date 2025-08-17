@@ -16,7 +16,7 @@ const Connection = () => {
   const [espIp, setEspIp] = useState<string>("");
   const [ssid, setSsid] = useState<string>("");
   const [password, setPassword] = useState<string>("");
-  const [anonKey, setAnonKey] = useState<string>("");
+  const [anonKey, setAnonKey] = useState<string>(import.meta.env.VITE_SUPABASE_ANON_KEY || "");
   const [deviceIp, setDeviceIp] = useState<string | null>(null);
 
   const getEdgeFunctionUrl = () => {
