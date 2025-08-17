@@ -1,9 +1,7 @@
-import { Auth } from "@supabase/auth-ui-react";
-import { ThemeSupa } from "@supabase/auth-ui-shared";
+import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthProvider";
-import { useEffect, useState } from "react";
 import { motion, Variants } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -66,35 +64,60 @@ const Login = () => {
     register,
     handleSubmit,
     formState: { errors },
-    trigger, // To manually trigger validation
+    trigger,
     setValue,
   } = useForm<LoginFormInputs>({
     resolver: zodResolver(loginSchema),
-  });
-
-  useEffect(() => {
-    if (session) {
-      navigate("/app");
+    defaultValues: {
+      email: "",
+      password: "",
+      rememberMe: false,
     }
-  }, [session, navigate]);
+  });
 
   const onSubmit = async (data: LoginFormInputs) => {
     setIsSubmitting(true);
     const toastId = showLoading("Logging in...");
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: data.email,
-      password: data.password,
-    });
+    try {
+      // First, try to sign in with the provided credentials
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
 
-    dismissToast(toastId);
-    setIsSubmitting(false);
+      if (authError) {
+        // If that fails, check if it's because the user doesn't exist
+        if (authError.message.includes("Invalid login credentials")) {
+          // Check if user exists in our database
+          const { data: userData, error: userError } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', data.email)
+            .single();
 
-    if (error) {
-      showError(error.message);
-    } else {
-      showSuccess("Logged in successfully!");
-      navigate("/app");
+          if (userError || !userData) {
+            // User doesn't exist in our database
+            showError("Invalid credentials. Please check your email and password.");
+          } else {
+            // User exists but password is wrong
+            showError("Invalid password. Please try again.");
+          }
+        } else {
+          // Some other error occurred
+          showError(authError.message);
+        }
+      } else {
+        // Login successful
+        showSuccess("Logged in successfully!");
+        navigate("/app");
+      }
+    } catch (error) {
+      showError("An unexpected error occurred. Please try again.");
+      console.error("Login error:", error);
+    } finally {
+      dismissToast(toastId);
+      setIsSubmitting(false);
     }
   };
 
@@ -103,18 +126,23 @@ const Login = () => {
     setValue("password", "demo123");
   };
 
+  // Redirect if already logged in
+  if (session) {
+    navigate("/app");
+  }
+
   return (
     <div className="min-h-screen main-gradient p-4 flex flex-col items-center justify-center overflow-hidden">
       <motion.div
-        className="w-full max-w-sm"
+        className="w-full max-w-md"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
       >
-        <div className="glass-card p-8">
+        <div className="glass-card p-6 sm:p-8">
           <motion.div variants={itemVariants} className="text-center mb-8">
             <motion.div
-              className="inline-block p-5 bg-primary/10 rounded-full mb-4 shadow-lg"
+              className="inline-block p-4 sm:p-5 bg-primary/10 rounded-full mb-4 shadow-lg"
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.3 }}
@@ -123,10 +151,10 @@ const Login = () => {
                 animate={{ rotate: [0, -10, 10, -5, 5, 0] }}
                 transition={{ duration: 1.5, repeat: Infinity, repeatDelay: 3, ease: "easeInOut" }}
               >
-                <BellRing className="h-10 w-10 text-primary" />
+                <BellRing className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
               </motion.div>
             </motion.div>
-            <h1 className="text-3xl font-bold text-primary">Welcome Back 👋</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-primary">Welcome Back 👋</h1>
             <p className="text-muted-foreground mt-1">Login to continue.</p>
           </motion.div>
 

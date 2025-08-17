@@ -8,7 +8,7 @@ import Schedules from "./pages/Schedules";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
-import SignUp from "./pages/SignUp"; // Import the new SignUp component
+import SignUp from "./pages/SignUp";
 import { AuthProvider } from "./contexts/AuthProvider";
 import ProtectedRoute from "./components/ProtectedRoute";
 import SplashScreen from "./pages/SplashScreen";
@@ -19,8 +19,8 @@ import Connection from "./pages/Connection";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <div className="w-full h-full bg-gray-200 dark:bg-gray-900 flex items-center justify-center p-4">
-    <div className="w-full max-w-sm h-full max-h-[844px] main-gradient rounded-3xl overflow-hidden relative">
+  <div className="w-full h-full bg-gray-200 dark:bg-gray-900 flex items-center justify-center p-0">
+    <div className="w-full h-full main-gradient rounded-none overflow-hidden relative">
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <ThemeProvider attribute="class" defaultTheme="light">
@@ -35,7 +35,7 @@ const App = () => (
                       element={<DepartmentSelection />}
                     />
                     <Route path="/login" element={<Login />} />
-                    <Route path="/signup" element={<SignUp />} /> {/* New SignUp Route */}
+                    <Route path="/signup" element={<SignUp />} />
                     <Route element={<ProtectedRoute />}>
                       <Route path="/app" element={<Layout />}>
                         <Route index element={<Dashboard />} />

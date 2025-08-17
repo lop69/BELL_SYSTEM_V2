@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { showError, showSuccess, showLoading, dismissToast } from "@/utils/toast";
+import { showError, showSuccess, showLoading, dismissToast } from "@/utils/toat";
 import { BellRing, Mail, Lock, Eye, EyeOff, User } from "lucide-react";
 
 const signUpSchema = z.object({
@@ -70,49 +70,54 @@ const SignUp = () => {
     setIsSubmitting(true);
     const toastId = showLoading("Creating your account...");
 
-    const { error } = await supabase.auth.signUp({
-      email: data.email,
-      password: data.password,
-      options: {
-        data: {
-          first_name: data.firstName,
-          last_name: data.lastName,
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            first_name: data.firstName,
+            last_name: data.lastName,
+          },
         },
-      },
-    });
+      });
 
-    dismissToast(toastId);
-    setIsSubmitting(false);
-
-    if (error) {
-      showError(error.message);
-    } else {
-      showSuccess("Account created! Please check your email to verify.");
-      navigate("/login");
+      if (error) {
+        showError(error.message);
+      } else {
+        showSuccess("Account created successfully!");
+        navigate("/login");
+      }
+    } catch (error) {
+      showError("An unexpected error occurred. Please try again.");
+      console.error("Sign up error:", error);
+    } finally {
+      dismissToast(toastId);
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="min-h-screen main-gradient p-4 flex flex-col items-center justify-center overflow-y-auto">
       <motion.div
-        className="w-full max-w-sm"
+        className="w-full max-w-md"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
       >
-        <div className="glass-card p-8">
+        <div className="glass-card p-6 sm:p-8">
           <motion.div variants={itemVariants} className="text-center mb-8">
             <motion.div
-              className="inline-block p-5 bg-primary/10 rounded-full mb-4 shadow-lg"
+              className="inline-block p-4 sm:p-5 bg-primary/10 rounded-full mb-4 shadow-lg"
             >
-              <BellRing className="h-10 w-10 text-primary" />
+              <BellRing className="h-8 w-8 sm:h-10 sm:w-10 text-primary" />
             </motion.div>
-            <h1 className="text-3xl font-bold text-primary">Create Account</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-primary">Create Account</h1>
             <p className="text-muted-foreground mt-1">Join the community.</p>
           </motion.div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="flex gap-4">
+            <div className="flex flex-col sm:flex-row gap-4">
               <motion.div
                 className="flex-1"
                 variants={shakeVariants}
