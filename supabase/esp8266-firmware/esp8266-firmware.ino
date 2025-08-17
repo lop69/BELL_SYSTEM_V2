@@ -1,8 +1,12 @@
 /*
- * Smart Bell Scheduler - Production Firmware v2.1
+ * Smart Bell Scheduler - Production Firmware v2.2 (FIXED)
  *
  * This firmware works with the Dyad-generated web application to create a configurable,
  * network-connected bell system.
+ *
+ * CHANGELOG:
+ * v2.2 - Fixed compilation error related to updated ESP8266HTTPClient library.
+ *      - The http.begin() call now correctly uses a WiFiClient object.
  *
  * FEATURES:
  * - Configuration Mode: Creates a WiFi hotspot ("SmartBell-Config") for initial setup.
@@ -14,16 +18,6 @@
  * - Test Bell Functionality: Listens for a "test bell" command from the app.
  * - Status LED: Provides clear visual feedback on the device's state.
  * - Auto-Reconnect: If WiFi is lost, it will continuously try to reconnect.
- *
- * HOW IT WORKS:
- * 1. On first boot (or after a reset), it enters Configuration Mode.
- * 2. The user connects their phone to the "SmartBell-Config" WiFi network.
- * 3. The user opens the app, goes to the Connection page, and sends the configuration.
- * 4. The device saves the config to EEPROM and reboots.
- * 5. On subsequent boots, it loads the config from EEPROM and connects to the user's WiFi.
- * 6. Once connected, it syncs time and starts polling the Supabase Edge Function every 30 seconds
- *    for the schedule and test bell commands.
- * 7. It checks the schedule every second and rings the bell when the current time matches a scheduled time.
  *
  * REQUIRED LIBRARIES (Install via Arduino IDE Library Manager):
  * 1. ArduinoJson (by Benoit Blanchon)
@@ -198,41 +192,48 @@ void syncSchedule() {
   }
 
   Serial.println("[SYNC] Fetching schedule from Supabase...");
+  
+  WiFiClient client;
   HTTPClient http;
-  http.begin(WiFi.softAPIP(), config.edge_url); // Corrected http.begin call
-  http.addHeader("Content-Type", "application/json");
-  http.addHeader("apikey", config.anon_key);
-  http.addHeader("Authorization", "Bearer " + String(config.anon_key));
 
-  JsonDocument requestBody;
-  requestBody["schedule_id"] = config.schedule_id;
-  String requestBodyString;
-  serializeJson(requestBody, requestBodyString);
+  // Correctly initialize the HTTP client with the WiFiClient and the full URL
+  if (http.begin(client, config.edge_url)) {
+    http.addHeader("Content-Type", "application/json");
+    http.addHeader("apikey", config.anon_key);
+    http.addHeader("Authorization", "Bearer " + String(config.anon_key));
 
-  int httpCode = http.POST(requestBodyString);
+    JsonDocument requestBody;
+    requestBody["schedule_id"] = config.schedule_id;
+    String requestBodyString;
+    serializeJson(requestBody, requestBodyString);
 
-  if (httpCode > 0) {
-    String payload = http.getString();
-    Serial.print("[SYNC] HTTP Response code: ");
-    Serial.println(httpCode);
-    Serial.print("[SYNC] Payload: ");
-    Serial.println(payload);
+    int httpCode = http.POST(requestBodyString);
 
-    if (httpCode == HTTP_CODE_OK) {
-      DeserializationError error = deserializeJson(scheduleDoc, payload);
-      if (error) {
-        Serial.print("[ERROR] Failed to parse schedule JSON: ");
-        Serial.println(error.c_str());
-      } else {
-        Serial.println("[SYNC] Schedule updated successfully.");
-        testBellActive = scheduleDoc["test_bell_active"].as<bool>();
+    if (httpCode > 0) {
+      String payload = http.getString();
+      Serial.print("[SYNC] HTTP Response code: ");
+      Serial.println(httpCode);
+      Serial.print("[SYNC] Payload: ");
+      Serial.println(payload);
+
+      if (httpCode == HTTP_CODE_OK) {
+        DeserializationError error = deserializeJson(scheduleDoc, payload);
+        if (error) {
+          Serial.print("[ERROR] Failed to parse schedule JSON: ");
+          Serial.println(error.c_str());
+        } else {
+          Serial.println("[SYNC] Schedule updated successfully.");
+          testBellActive = scheduleDoc["test_bell_active"].as<bool>();
+        }
       }
+    } else {
+      Serial.printf("[ERROR] HTTP POST failed, error: %s\n", http.errorToString(httpCode).c_str());
     }
-  } else {
-    Serial.printf("[ERROR] HTTP POST failed, error: %s\n", http.errorToString(httpCode).c_str());
-  }
 
-  http.end();
+    http.end();
+  } else {
+    Serial.println("[ERROR] Unable to begin HTTP connection to Edge Function.");
+  }
 }
 
 
@@ -299,7 +300,7 @@ void checkSchedule() {
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("\n\n[INFO] Smart Bell Scheduler v2.1 Starting...");
+  Serial.println("\n\n[INFO] Smart Bell Scheduler v2.2 Starting...");
 
   pinMode(BELL_PIN, OUTPUT);
   pinMode(LED_PIN, OUTPUT);
