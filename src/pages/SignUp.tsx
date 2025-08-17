@@ -90,7 +90,7 @@ const SignUp = () => {
                   divider: 'bg-gray-300/50'
                 }
               }}
-              providers={['google']}
+              providers={[]}
               theme="light"
             />
           </motion.div>

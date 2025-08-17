@@ -195,34 +195,7 @@ const Login = () => {
             </Button>
           </form>
 
-          <motion.div variants={itemVariants} className="relative my-6">
-            <Separator className="bg-gray-300/50" />
-            <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white/70 dark:bg-gray-950/50 px-2 text-xs text-muted-foreground backdrop-blur-sm">or continue with</span>
-          </motion.div>
-
-          <motion.div variants={itemVariants}>
-            <Auth
-              supabaseClient={supabase}
-              appearance={{
-                theme: ThemeSupa,
-                extend: false,
-                className: {
-                  button: 'gradient-button !rounded-lg !py-2.5 !bg-gradient-to-r !from-gray-600 !to-gray-800 hover:!from-gray-700 hover:!to-gray-900', // Custom style for social buttons
-                  anchor: 'text-primary hover:text-sky-600',
-                  message: 'text-red-500 text-sm',
-                  divider: 'bg-gray-300/50'
-                }
-              }}
-              providers={['google']} // Only Google is configured in your current setup
-              theme="light"
-              magicLink={false} // Disable magic link to focus on password login
-              showLinks={false} // Hide default sign up/forgot password links from Auth UI
-            />
-          </motion.div>
-
-         
-
-          <motion.div variants={itemVariants} className="mt-4 text-center space-y-2">
+          <motion.div variants={itemVariants} className="mt-6 text-center space-y-2">
             <Button
               variant="outline"
               className="w-full bg-white/50 border-gray-300/50 hover:bg-white/80 text-primary rounded-lg transition-transform transform hover:scale-105"
@@ -236,6 +209,13 @@ const Login = () => {
               onClick={loginAsGuest}
             >
               Continue as Guest (Demo)
+            </Button>
+            <Button
+              variant="link"
+              className="text-primary hover:text-sky-600"
+              onClick={() => navigate('/signup')}
+            >
+              Don't have an account? Sign Up
             </Button>
           </motion.div>
         </div>
