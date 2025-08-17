@@ -10,7 +10,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { showError, showSuccess, showLoading, dismissToast } from "@/utils/toast";
 import { BellRing, Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { useAuth } from "@/contexts/AuthProvider"; // Added missing import
+import { useAuth } from "@/contexts/AuthProvider";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -29,7 +29,6 @@ const Login = () => {
     register,
     handleSubmit,
     formState: { errors },
-    setValue,
   } = useForm<LoginFormInputs>({
     resolver: zodResolver(loginSchema),
   });
@@ -52,31 +51,6 @@ const Login = () => {
       }
     } catch (error) {
       showError("An unexpected error occurred");
-    } finally {
-      dismissToast(toastId);
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleDemoLogin = async () => {
-    setIsSubmitting(true);
-    const toastId = showLoading("Logging in with demo credentials...");
-    
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: "demo@example.com",
-        password: "demo123",
-      });
-
-      if (error) {
-        showError("Demo login failed. Please create the demo account first.");
-        navigate("/signup");
-      } else {
-        showSuccess("Demo login successful!");
-        navigate("/app");
-      }
-    } catch (error) {
-      showError("Failed to login with demo credentials");
     } finally {
       dismissToast(toastId);
       setIsSubmitting(false);
@@ -150,14 +124,6 @@ const Login = () => {
           </form>
 
           <div className="mt-6 space-y-2">
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={handleDemoLogin}
-              disabled={isSubmitting}
-            >
-              Use Demo Credentials
-            </Button>
             <Button
               variant="link"
               className="w-full text-primary"
