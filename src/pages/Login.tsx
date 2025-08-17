@@ -10,6 +10,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { showError, showSuccess, showLoading, dismissToast } from "@/utils/toast";
 import { BellRing, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { useAuth } from "@/contexts/AuthProvider"; // Added missing import
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
