@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Wifi, CheckCircle, XCircle, Loader, RefreshCw, WifiOff, KeyRound, Tag, Info, BellRing, Signal } from "lucide-react";
+import { Wifi, CheckCircle, XCircle, Loader, AlertTriangle, WifiOff, KeyRound, Tag, Info, BellRing, Signal } from "lucide-react";
 import { motion } from "framer-motion";
 import { showLoading, dismissToast, showSuccess, showError } from "@/utils/toast";
 import { useAuth } from "@/contexts/AuthProvider";
@@ -22,7 +22,6 @@ const Connection = () => {
   const [selectedSchedule, setSelectedSchedule] = useState<string>("");
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [anonKey] = useState<string>(import.meta.env.VITE_SUPABASE_ANON_KEY || "");
-  const [deviceIp, setDeviceIp] = useState<string | null>(null);
   const configModeIp = "192.168.4.1";
 
   useEffect(() => {
@@ -46,7 +45,7 @@ const Connection = () => {
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       return await response.json();
     } catch (error) {
-      showError(`Failed to communicate with device at ${configModeIp}. Ensure you are connected to its 'SmartBell-Config' WiFi.`);
+      showError(`Failed to communicate with device at ${configModeIp}. Ensure you are connected to its 'SmartBell-Config' WiFi and have disabled mobile data.`);
       return null;
     }
   };
@@ -86,7 +85,6 @@ const Connection = () => {
     } else {
       dismissToast(toastId);
       setStatus("failed");
-      showError("Failed to send configuration to device.");
     }
   };
 
@@ -94,7 +92,6 @@ const Connection = () => {
     if (!user) return;
     const toastId = showLoading("Sending test signal...");
     try {
-      // Activate the test bell
       const { error: activateError } = await supabase
         .from("test_bells")
         .upsert({ user_id: user.id, is_active: true }, { onConflict: 'user_id' });
@@ -102,13 +99,12 @@ const Connection = () => {
 
       showSuccess("Test signal sent! The bell should ring within 30 seconds.");
 
-      // Deactivate after a delay
       setTimeout(async () => {
         await supabase
           .from("test_bells")
           .update({ is_active: false })
           .eq("user_id", user.id);
-      }, 30000); // The device checks every 30s, so we turn it off after that window.
+      }, 30000);
 
     } catch (error) {
       showError("Failed to send test signal.");
@@ -139,44 +135,41 @@ const Connection = () => {
             <p>To configure your device, first connect your phone to its temporary WiFi network.</p>
             <p><strong>Network Name:</strong> <code className="font-mono bg-muted p-1 rounded-md">SmartBell-Config</code></p>
             <p><strong>Password:</strong> <code className="font-mono bg-muted p-1 rounded-md">password</code></p>
-            <p>Your phone may say "No Internet," which is normal. Stay connected and proceed to Step 2.</p>
           </CardContent>
         </Card>
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+        <Card className="border-orange-500/50 glass-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-orange-500"><AlertTriangle className="h-5 w-5" />Important: Troubleshooting</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground space-y-2">
+            <p>If you see a "Failed to send" error, it's likely because your phone disconnected from the device's WiFi.</p>
+            <p><strong>Solution:</strong> Before proceeding to Step 2, **temporarily disable Mobile/Cellular Data** on your phone. This forces it to stay connected to `SmartBell-Config`.</p>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
         <Card className="glass-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Signal className="h-5 w-5" />Step 2: Send Configuration</CardTitle>
             <CardDescription>Enter your main WiFi details here. This information will be sent to the device.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="schedule-select">Assign to Year/Schedule</Label>
-              <Select value={selectedSchedule} onValueChange={setSelectedSchedule}><SelectTrigger><SelectValue placeholder="Select a schedule..." /></SelectTrigger><SelectContent>{schedules.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select>
-            </div>
-            <div>
-              <Label htmlFor="device-name">Device Name</Label>
-              <div className="relative"><Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input id="device-name" placeholder="e.g., 1st Year Bell" value={deviceName} onChange={(e) => setDeviceName(e.target.value)} className="pl-10" /></div>
-            </div>
-            <div>
-              <Label htmlFor="ssid">Your WiFi SSID (Name)</Label>
-              <div className="relative"><Wifi className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input id="ssid" placeholder="Enter your WiFi name" value={ssid} onChange={(e) => setSsid(e.target.value)} className="pl-10" /></div>
-            </div>
-            <div>
-              <Label htmlFor="password">Your WiFi Password</Label>
-              <div className="relative"><KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input id="password" type="password" placeholder="Enter WiFi password" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10" /></div>
-            </div>
+            <div><Label htmlFor="schedule-select">Assign to Year/Schedule</Label><Select value={selectedSchedule} onValueChange={setSelectedSchedule}><SelectTrigger><SelectValue placeholder="Select a schedule..." /></SelectTrigger><SelectContent>{schedules.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent></Select></div>
+            <div><Label htmlFor="device-name">Device Name</Label><div className="relative"><Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input id="device-name" placeholder="e.g., 1st Year Bell" value={deviceName} onChange={(e) => setDeviceName(e.target.value)} className="pl-10" /></div></div>
+            <div><Label htmlFor="ssid">Your WiFi SSID (Name)</Label><div className="relative"><Wifi className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input id="ssid" placeholder="Enter your WiFi name" value={ssid} onChange={(e) => setSsid(e.target.value)} className="pl-10" /></div></div>
+            <div><Label htmlFor="password">Your WiFi Password</Label><div className="relative"><KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input id="password" type="password" placeholder="Enter WiFi password" value={password} onChange={(e) => setPassword(e.target.value)} className="pl-10" /></div></div>
             <Button className="w-full gradient-button" onClick={handleConnect}>Connect & Save Device</Button>
           </CardContent>
         </Card>
       </motion.div>
 
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
         <Card className="glass-card text-center p-6">
-          <CardHeader className="p-0 mb-4">
-            <CardTitle className="flex items-center justify-center gap-2">Step 3: Status & Testing</CardTitle>
-          </CardHeader>
+          <CardHeader className="p-0 mb-4"><CardTitle className="flex items-center justify-center gap-2">Step 3: Status & Testing</CardTitle></CardHeader>
           <CardContent className="flex flex-col items-center gap-4 p-0">
             <StatusIndicator />
             <p className="font-semibold capitalize">{status}</p>

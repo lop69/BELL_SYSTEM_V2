@@ -1,18 +1,19 @@
 /*
- * Smart Bell Scheduler - Production Firmware v2.2 (FIXED)
+ * Smart Bell Scheduler - Production Firmware v2.3 (CORS FIX)
  *
  * This firmware works with the Dyad-generated web application to create a configurable,
  * network-connected bell system.
  *
  * CHANGELOG:
- * v2.2 - Fixed compilation error related to updated ESP8266HTTPClient library.
- *      - The http.begin() call now correctly uses a WiFiClient object.
+ * v2.3 - Resolved "Failed to send configuration" error by adding CORS headers.
+ *      - The configuration web server now handles OPTIONS pre-flight requests and
+ *        sends 'Access-Control-Allow-Origin' headers on all responses, which is
+ *        required by modern browsers for cross-domain communication.
  *
  * FEATURES:
  * - Configuration Mode: Creates a WiFi hotspot ("SmartBell-Config") for initial setup.
  * - Web Portal: A simple web server allows the app to send WiFi and Supabase credentials.
- * - EEPROM Storage: Securely saves configuration to permanent memory. The device
- *   remembers its settings even after a power loss.
+ * - EEPROM Storage: Securely saves configuration to permanent memory.
  * - Supabase Integration: Periodically fetches the bell schedule from a Supabase Edge Function.
  * - NTP Time Sync: Keeps accurate time to ensure bells ring precisely.
  * - Test Bell Functionality: Listens for a "test bell" command from the app.
@@ -87,7 +88,6 @@ void loadConfig() {
   }
 }
 
-// Function to clear configuration - useful for debugging or resetting the device
 void clearConfig() {
   config.configured = false;
   saveConfig();
@@ -100,7 +100,19 @@ void clearConfig() {
 // INITIAL SETUP & CONFIGURATION PORTAL
 // =================================================================
 
+void addCorsHeaders() {
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.sendHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+  server.sendHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+}
+
+void handleOptions() {
+  addCorsHeaders();
+  server.send(204);
+}
+
 void handleConfig() {
+  addCorsHeaders();
   if (server.hasArg("plain") == false) {
     server.send(400, "text/plain", "Body not received");
     return;
@@ -117,7 +129,6 @@ void handleConfig() {
     return;
   }
 
-  // Copy data from JSON to our config struct
   strlcpy(config.ssid, doc["ssid"], sizeof(config.ssid));
   strlcpy(config.password, doc["password"], sizeof(config.password));
   strlcpy(config.anon_key, doc["anon_key"], sizeof(config.anon_key));
@@ -134,7 +145,7 @@ void handleConfig() {
 }
 
 void startConfigPortal() {
-  digitalWrite(LED_PIN, HIGH); // Turn LED OFF in config mode
+  digitalWrite(LED_PIN, HIGH);
   Serial.println("[SETUP] Starting configuration server.");
   WiFi.softAP(CONFIG_AP_SSID, CONFIG_AP_PASSWORD);
   IPAddress apIP = WiFi.softAPIP();
@@ -142,10 +153,10 @@ void startConfigPortal() {
   Serial.println(apIP);
 
   server.on("/config", HTTP_POST, handleConfig);
+  server.on("/config", HTTP_OPTIONS, handleOptions); // Handle browser pre-flight requests
   server.begin();
 
   Serial.println("[SETUP] Connect to WiFi 'SmartBell-Config' (password: 'password')");
-  Serial.println("[SETUP] The app will send configuration automatically.");
 
   while (true) {
     server.handleClient();
@@ -165,7 +176,7 @@ void connectToWiFi() {
 
   int attempts = 0;
   while (WiFi.status() != WL_CONNECTED && attempts < 30) {
-    digitalWrite(LED_PIN, !digitalRead(LED_PIN)); // Fast blink
+    digitalWrite(LED_PIN, !digitalRead(LED_PIN));
     delay(200);
     Serial.print(".");
     attempts++;
@@ -175,10 +186,10 @@ void connectToWiFi() {
     Serial.println("\n[WIFI] Connected!");
     Serial.print("[WIFI] IP address: ");
     Serial.println(WiFi.localIP());
-    digitalWrite(LED_PIN, HIGH); // LED OFF (idle state)
+    digitalWrite(LED_PIN, HIGH);
   } else {
     Serial.println("\n[WIFI] Failed to connect. Entering config mode.");
-    clearConfig(); // If we can't connect, the saved credentials might be wrong.
+    clearConfig();
   }
 }
 
@@ -196,7 +207,6 @@ void syncSchedule() {
   WiFiClient client;
   HTTPClient http;
 
-  // Correctly initialize the HTTP client with the WiFiClient and the full URL
   if (http.begin(client, config.edge_url)) {
     http.addHeader("Content-Type", "application/json");
     http.addHeader("apikey", config.anon_key);
@@ -236,18 +246,17 @@ void syncSchedule() {
   }
 }
 
-
 // =================================================================
 // CORE DEVICE LOGIC
 // =================================================================
 
 void ringBell() {
   Serial.println("[BELL] Ringing bell!");
-  digitalWrite(LED_PIN, LOW); // Turn LED ON solid while ringing
-  digitalWrite(BELL_PIN, HIGH); // Activate relay
-  delay(2000); // Ring for 2 seconds
-  digitalWrite(BELL_PIN, LOW); // Deactivate relay
-  digitalWrite(LED_PIN, HIGH); // Turn LED OFF
+  digitalWrite(LED_PIN, LOW);
+  digitalWrite(BELL_PIN, HIGH);
+  delay(2000);
+  digitalWrite(BELL_PIN, LOW);
+  digitalWrite(LED_PIN, HIGH);
   Serial.println("[BELL] Bell sequence finished.");
 }
 
@@ -257,11 +266,9 @@ void checkSchedule() {
     return;
   }
 
-  // Handle Test Bell command
   if (testBellActive) {
     ringBell();
-    testBellActive = false; // Reset after ringing once
-    // The app/server is responsible for turning off the flag in the database
+    testBellActive = false;
   }
 
   JsonArray bells = scheduleDoc["bells"].as<JsonArray>();
@@ -269,13 +276,13 @@ void checkSchedule() {
     return;
   }
 
-  int currentDay = timeClient.getDay(); // Sunday = 0, Saturday = 6
-  String currentTime = timeClient.getFormattedTime().substring(0, 5); // HH:MM
+  int currentDay = timeClient.getDay();
+  String currentTime = timeClient.getFormattedTime().substring(0, 5);
 
   static String lastTriggeredTime = "";
 
   if (currentTime == lastTriggeredTime) {
-    return; // Avoid ringing multiple times in the same minute
+    return;
   }
 
   for (JsonObject bell : bells) {
@@ -287,7 +294,7 @@ void checkSchedule() {
         if (day.as<int>() == currentDay) {
           ringBell();
           lastTriggeredTime = currentTime;
-          return; // Exit after finding a match
+          return;
         }
       }
     }
@@ -300,12 +307,12 @@ void checkSchedule() {
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("\n\n[INFO] Smart Bell Scheduler v2.2 Starting...");
+  Serial.println("\n\n[INFO] Smart Bell Scheduler v2.3 Starting...");
 
   pinMode(BELL_PIN, OUTPUT);
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(BELL_PIN, LOW);
-  digitalWrite(LED_PIN, HIGH); // LED is active LOW, so HIGH is OFF
+  digitalWrite(LED_PIN, HIGH);
 
   loadConfig();
 
@@ -324,7 +331,6 @@ void setup() {
 
 void loop() {
   if (!config.configured) {
-    // This should not be reached if config portal is running, but as a safeguard.
     return;
   }
 
@@ -332,10 +338,9 @@ void loop() {
     Serial.println("[WIFI] Connection lost. Reconnecting...");
     connectToWiFi();
   } else {
-    // Heartbeat LED
-    digitalWrite(LED_PIN, LOW); // Blink ON
+    digitalWrite(LED_PIN, LOW);
     delay(50);
-    digitalWrite(LED_PIN, HIGH); // Blink OFF
+    digitalWrite(LED_PIN, HIGH);
 
     timeClient.update();
 
@@ -348,5 +353,5 @@ void loop() {
     checkSchedule();
   }
 
-  delay(1000); // Main loop delay
+  delay(1000);
 }
