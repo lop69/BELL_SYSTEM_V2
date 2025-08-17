@@ -20,7 +20,7 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <div className="w-full h-full bg-gray-200 dark:bg-gray-900 flex items-center justify-center p-4">
-    <div className="w-full max-w-sm h-full max-h-[844px] main-gradient rounded-3xl border-8 border-black shadow-2xl overflow-hidden relative">
+    <div className="w-full max-w-sm h-full max-h-[844px] main-gradient rounded-3xl overflow-hidden relative">
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <ThemeProvider attribute="class" defaultTheme="light">
