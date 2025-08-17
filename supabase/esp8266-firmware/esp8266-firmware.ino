@@ -1,9 +1,13 @@
 /*
-  Smart Bell Scheduler - ESP8266 Firmware
+  Smart Bell Scheduler - ESP8266 Firmware (v2)
   
   This firmware connects an ESP8266 to a WiFi network, fetches bell schedules
   from a Supabase Edge Function, and rings a bell (by controlling a GPIO pin)
   at the scheduled times.
+
+  Version 2 Fixes:
+  - Updated HTTPClient usage to be compatible with modern ESP8266 core libraries.
+  - Uses WiFiClientSecure to handle HTTPS connections to Supabase.
 
   Features:
   - WiFi Connection with credentials saved in EEPROM.
@@ -15,12 +19,13 @@
   - Handles "Test Bell" functionality from the web app.
 
   Libraries needed in Arduino IDE:
-  - ArduinoJson by Benoit Blanchon (version 6.x)
+  - ArduinoJson by Benoit Blanchon (version 6.x or 7.x)
 */
 
 #include <ESP8266WiFi.h>
 #include <ESP8266WebServer.h>
 #include <ESP8266HTTPClient.h>
+#include <WiFiClientSecure.h> // Required for HTTPS
 #include <ArduinoJson.h>
 #include <EEPROM.h>
 #include <NTPClient.h>
@@ -103,6 +108,7 @@ void loop() {
     }
   } else {
     // If connected, sync with Supabase periodically.
+    server.handleClient(); // Also handle server requests when connected
     unsigned long currentMillis = millis();
     if (currentMillis - lastSyncTime >= syncInterval) {
       lastSyncTime = currentMillis;
@@ -161,7 +167,7 @@ void clearCredentials() {
 void connectToWiFi() {
   Serial.print("Connecting to ");
   Serial.println(ssid);
-  WiFi.begin(ssid, password);
+  WiFi.begin(ssid.c_str(), password.c_str());
   
   int attempts = 0;
   while (WiFi.status() != WL_CONNECTED && attempts < 20) {
@@ -175,16 +181,19 @@ void connectToWiFi() {
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
     timeClient.begin();
+    startConfigServer(); // Start server even in client mode for status checks
   } else {
-    Serial.println("\nFailed to connect to WiFi. Starting config server.");
+    Serial.println("\nFailed to connect to WiFi. Starting config server in AP mode.");
     startConfigServer();
   }
 }
 
 void startConfigServer() {
-  WiFi.softAP("SmartBell-Setup");
-  Serial.print("AP IP address: ");
-  Serial.println(WiFi.softAPIP());
+  if (WiFi.getMode() != WIFI_AP) {
+    WiFi.softAP("SmartBell-Setup");
+    Serial.print("AP IP address: ");
+    Serial.println(WiFi.softAPIP());
+  }
 
   server.on("/", HTTP_GET, handleRoot);
   server.on("/config", HTTP_POST, handleConfig);
@@ -192,7 +201,7 @@ void startConfigServer() {
   server.on("/disconnect", HTTP_POST, handleDisconnect);
   
   server.begin();
-  Serial.println("HTTP server started for configuration.");
+  Serial.println("HTTP server started.");
 }
 
 // =================================================================
@@ -255,69 +264,81 @@ void syncWithSupabase() {
 
   timeClient.update();
   
+  // Use WiFiClientSecure for HTTPS connections
+  std::unique_ptr<BearSSL::WiFiClientSecure>client(new BearSSL::WiFiClientSecure);
+  
+  // Supabase functions use HTTPS. For simplicity, we'll allow insecure connections
+  // by skipping certificate validation. In a production environment, you should use 
+  // certificate fingerprint validation for better security.
+  client->setInsecure();
+  
   HTTPClient http;
-  http.begin(edgeUrl);
-  http.addHeader("Content-Type", "application/json");
 
-  String requestBody = "{\"user_id\":\"" + userId + "\"}";
-  int httpCode = http.POST(requestBody);
+  Serial.print("[HTTP] begin...\n");
+  if (http.begin(*client, edgeUrl)) { // The corrected begin() method call
+    http.addHeader("Content-Type", "application/json");
 
-  if (httpCode > 0) {
-    String payload = http.getString();
-    Serial.println("Sync successful. Payload received:");
-    Serial.println(payload);
+    String requestBody = "{\"user_id\":\"" + userId + "\"}";
+    int httpCode = http.POST(requestBody);
 
-    StaticJsonDocument<1024> doc;
-    DeserializationError error = deserializeJson(doc, payload);
+    if (httpCode > 0) {
+      Serial.printf("[HTTP] POST... code: %d\n", httpCode);
+      String payload = http.getString();
+      Serial.println("Sync successful. Payload received:");
+      Serial.println(payload);
 
-    if (error) {
-      Serial.print("deserializeJson() failed: ");
-      Serial.println(error.c_str());
-      return;
-    }
+      StaticJsonDocument<1024> doc;
+      DeserializationError error = deserializeJson(doc, payload);
 
-    // Check for test bell
-    bool testBellActive = doc["test_bell_active"];
-    if (testBellActive) {
-      Serial.println("Test bell is active! Ringing now.");
-      ringBell();
-      return; // Don't check regular schedule if test bell is active
-    }
+      if (error) {
+        Serial.print("deserializeJson() failed: ");
+        Serial.println(error.c_str());
+        http.end();
+        return;
+      }
 
-    // Check scheduled bells
-    JsonArray bells = doc["bells"];
-    int currentDay = timeClient.getDay(); // Sunday = 0, Monday = 1, ..., Saturday = 6
-    // The app uses Mon=0, so we adjust: (day + 6) % 7
-    int adjustedDay = (currentDay == 0) ? 6 : currentDay - 1;
+      // Check for test bell
+      bool testBellActive = doc["test_bell_active"];
+      if (testBellActive) {
+        Serial.println("Test bell is active! Ringing now.");
+        ringBell();
+        http.end();
+        return; // Don't check regular schedule if test bell is active
+      }
 
-    String currentTime = timeClient.getFormattedTime().substring(0, 5); // HH:MM
+      // Check scheduled bells
+      JsonArray bells = doc["bells"];
+      int currentDay = timeClient.getDay(); // Sunday = 0, Monday = 1, ..., Saturday = 6
+      int adjustedDay = (currentDay == 0) ? 6 : currentDay - 1; // Adjust to Mon=0, Sun=6
 
-    for (JsonObject bell : bells) {
-      String bellTime = bell["time"]; // "HH:MM"
-      JsonArray daysOfWeek = bell["days_of_week"];
+      String currentTime = timeClient.getFormattedTime().substring(0, 5); // HH:MM
 
-      bool todayIsBellDay = false;
-      for (int day : daysOfWeek) {
-        if (day == adjustedDay) {
-          todayIsBellDay = true;
-          break;
+      for (JsonObject bell : bells) {
+        String bellTime = bell["time"]; // "HH:MM"
+        JsonArray daysOfWeek = bell["days_of_week"];
+
+        bool todayIsBellDay = false;
+        for (int day : daysOfWeek) {
+          if (day == adjustedDay) {
+            todayIsBellDay = true;
+            break;
+          }
+        }
+
+        if (todayIsBellDay && bellTime == currentTime) {
+          Serial.print("Scheduled bell match! Label: ");
+          Serial.println(bell["label"].as<String>());
+          ringBell();
+          break; // Ring only once per sync cycle
         }
       }
-
-      if (todayIsBellDay && bellTime == currentTime) {
-        Serial.print("Scheduled bell match! Label: ");
-        Serial.println(bell["label"].as<String>());
-        ringBell();
-        break; // Ring only once per sync cycle
-      }
+    } else {
+      Serial.printf("[HTTP] POST... failed, error: %s\n", http.errorToString(httpCode).c_str());
     }
-
+    http.end();
   } else {
-    Serial.print("Sync failed, error: ");
-    Serial.println(http.errorToString(httpCode).c_str());
+    Serial.printf("[HTTP] Unable to connect to: %s\n", edgeUrl.c_str());
   }
-
-  http.end();
 }
 
 void ringBell() {
