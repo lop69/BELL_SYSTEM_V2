@@ -3,10 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Wifi, CheckCircle, XCircle, Loader, RefreshCw, WifiOff } from "lucide-react";
+import { Wifi, CheckCircle, XCircle, Loader, RefreshCw, WifiOff, KeyRound } from "lucide-react";
 import { motion } from "framer-motion";
 import { showLoading, dismissToast, showSuccess, showError } from "@/utils/toast";
-import { useAuth } from "@/contexts/AuthProvider"; // Import useAuth to get user ID
+import { useAuth } from "@/contexts/AuthProvider";
 
 type Status = "connected" | "failed" | "pending" | "disconnected";
 
@@ -16,12 +16,11 @@ const Connection = () => {
   const [espIp, setEspIp] = useState<string>("");
   const [ssid, setSsid] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  const [anonKey, setAnonKey] = useState<string>("");
   const [deviceIp, setDeviceIp] = useState<string | null>(null);
 
   const getEdgeFunctionUrl = () => {
-    // This should ideally be configured via environment variables or a more robust method
-    // For now, hardcode based on your Supabase project ID and function name
-    const projectId = "tkrgbcfidggxioizvkeq"; // Replace with your actual Supabase Project ID
+    const projectId = "tkrgbcfidggxioizvkeq";
     const functionName = "bell-sync";
     return `https://${projectId}.supabase.co/functions/v1/${functionName}`;
   };
@@ -52,12 +51,12 @@ const Connection = () => {
   };
 
   const handleConnect = async () => {
-    if (!ssid || !password || !user?.id) {
-      showError("Please enter WiFi SSID, Password, and ensure you are logged in.");
+    if (!ssid || !password || !user?.id || !anonKey) {
+      showError("Please fill in all fields: WiFi SSID, Password, and Supabase Anon Key.");
       return;
     }
 
-    const toastId = showLoading("Sending WiFi credentials to device...");
+    const toastId = showLoading("Sending configuration to device...");
     setStatus("pending");
 
     const edgeFunctionUrl = getEdgeFunctionUrl();
@@ -67,16 +66,16 @@ const Connection = () => {
       password: password,
       edge_url: edgeFunctionUrl,
       user_id: user.id,
+      anon_key: anonKey,
     });
 
     dismissToast(toastId);
     if (response) {
-      showSuccess("WiFi credentials sent. Device attempting to connect...");
-      // Give ESP time to connect, then refresh status
+      showSuccess("Configuration sent. Device attempting to connect...");
       setTimeout(handleRefreshStatus, 5000); 
     } else {
       setStatus("failed");
-      showError("Failed to send WiFi credentials to device.");
+      showError("Failed to send configuration to device.");
     }
   };
 
@@ -152,8 +151,7 @@ const Connection = () => {
                   className="bg-white/50 dark:bg-black/20 border-gray-300/50 dark:border-gray-700/50" 
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  This is the IP address of your ESP8266 on your local network.
-                  You might find it in your router's connected devices list.
+                  The IP of your ESP8266 on your local network. Check your router's device list if unsure.
                 </p>
               </div>
               <div>
@@ -176,6 +174,20 @@ const Connection = () => {
                   onChange={(e) => setPassword(e.target.value)} 
                   className="bg-white/50 dark:bg-black/20 border-gray-300/50 dark:border-gray-700/50" 
                 />
+              </div>
+              <div>
+                <Label htmlFor="anon-key" className="text-left block mb-2">Supabase Anon Key</Label>
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    id="anon-key" 
+                    type="password"
+                    placeholder="Enter your Supabase public anon key" 
+                    value={anonKey} 
+                    onChange={(e) => setAnonKey(e.target.value)} 
+                    className="pl-10 bg-white/50 dark:bg-black/20 border-gray-300/50 dark:border-gray-700/50" 
+                  />
+                </div>
               </div>
               <Button className="w-full gradient-button" onClick={handleConnect}>Connect to Device</Button>
               <div className="flex gap-2">
