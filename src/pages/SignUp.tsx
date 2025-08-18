@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { z } from "zod";
 import { showError, showSuccess, showLoading, dismissToast } from "@/utils/toast";
 import { BellRing, Mail, Lock, Eye, EyeOff, User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthProvider";
+import ReCAPTCHA from "react-google-recaptcha";
 
 const signUpSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -25,6 +26,7 @@ const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { session } = useAuth();
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
 
   const {
     register,
@@ -45,6 +47,13 @@ const SignUp = () => {
     const toastId = showLoading("Signing up...");
 
     try {
+      const captchaToken = await recaptchaRef.current?.executeAsync();
+      recaptchaRef.current?.reset();
+
+      if (!captchaToken) {
+        throw new Error("CAPTCHA verification failed. Please try again.");
+      }
+
       const { error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
@@ -53,6 +62,7 @@ const SignUp = () => {
             first_name: data.firstName,
             last_name: data.lastName,
           },
+          captchaToken,
         },
       });
 
@@ -62,8 +72,8 @@ const SignUp = () => {
         showSuccess("Sign up successful! You can now log in.");
         navigate("/login");
       }
-    } catch (error) {
-      showError("An unexpected error occurred during sign up.");
+    } catch (error: any) {
+      showError(error.message || "An unexpected error occurred during sign up.");
     } finally {
       dismissToast(toastId);
       setIsSubmitting(false);
@@ -107,6 +117,11 @@ const SignUp = () => {
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <ReCAPTCHA
+              ref={recaptchaRef}
+              size="invisible"
+              sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+            />
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="firstName">First Name</Label>
@@ -185,7 +200,7 @@ const SignUp = () => {
               )}
             </div>
 
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
+            <Button type="submit" className="w-full gradient-button" disabled={isSubmitting}>
               {isSubmitting ? "Signing up..." : "Sign Up"}
             </Button>
           </form>

@@ -21,10 +21,10 @@ const Layout = () => {
         <motion.main
           key={location.pathname}
           className="h-full overflow-y-auto p-4 pt-20 pb-20"
-          initial={{ opacity: 0, y: 15 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -15 }}
-          transition={{ duration: 0.3, ease: "easeInOut" }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.2, ease: "easeInOut" }}
         >
           <Outlet />
         </motion.main>
