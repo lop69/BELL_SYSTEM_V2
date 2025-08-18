@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,6 @@ import { z } from "zod";
 import { showError, showSuccess, showLoading, dismissToast } from "@/utils/toast";
 import { BellRing, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/contexts/AuthProvider";
-import ReCAPTCHA from "react-google-recaptcha";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -24,7 +23,6 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { session } = useAuth();
-  const recaptchaRef = useRef<ReCAPTCHA>(null);
 
   const {
     register,
@@ -45,19 +43,9 @@ const Login = () => {
     const toastId = showLoading("Logging in...");
 
     try {
-      const captchaToken = await recaptchaRef.current?.executeAsync();
-      recaptchaRef.current?.reset();
-
-      if (!captchaToken) {
-        throw new Error("CAPTCHA verification failed. Please try again.");
-      }
-
       const { error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
-        options: {
-          captchaToken,
-        },
       });
 
       if (error) {
@@ -111,11 +99,6 @@ const Login = () => {
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <ReCAPTCHA
-              ref={recaptchaRef}
-              size="invisible"
-              sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
-            />
             <div>
               <Label htmlFor="email">Email</Label>
               <div className="relative">
