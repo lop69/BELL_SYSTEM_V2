@@ -21,10 +21,10 @@ const Layout = () => {
         <motion.main
           key={location.pathname}
           className="h-full overflow-y-auto p-4 pt-20 pb-20"
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.2, ease: "easeInOut" }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
         >
           <Outlet />
         </motion.main>
@@ -53,6 +53,7 @@ const Layout = () => {
                     <motion.div
                       className="absolute bottom-1 h-1 w-1 bg-primary rounded-full"
                       layoutId="active-indicator"
+                      transition={{ duration: 0.4, ease: [0.25, 1, 0.5, 1] }}
                     />
                   )}
                 </>

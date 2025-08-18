@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthProvider";
 import { Schedule, Bell } from "@/types/database";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { motion, AnimatePresence } from "framer-motion";
 
 const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -139,13 +140,39 @@ const Schedules = () => {
             <Card className="glass-card">
               <CardHeader><div className="flex justify-between items-center gap-2"><div><CardTitle>{schedule.name}</CardTitle><CardDescription>Manage bells for {schedule.name.toLowerCase()}.</CardDescription></div><Button variant="destructive" size="sm" onClick={() => handleDeleteSchedule(schedule.id)}><Trash2 className="h-4 w-4" /></Button></div></CardHeader>
               <CardContent className="space-y-3">
-                {(bells[schedule.id] || []).length > 0 ? (bells[schedule.id].map((bell) => (<div key={bell.id} className="flex items-center justify-between rounded-2xl border p-3 bg-background/50"><div><p className="font-semibold">{bell.label}</p><p className="text-sm text-muted-foreground">{bell.time}</p></div><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onClick={() => openEditDialog(bell)}><Edit className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem><DropdownMenuItem onClick={() => handleDeleteBell(bell.id)} className="text-red-500"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu></div>))) : (<p className="text-muted-foreground text-center p-4">No bells scheduled.</p>)}
+                <AnimatePresence>
+                  {(bells[schedule.id] || []).length > 0 ? (bells[schedule.id].map((bell) => (
+                    <motion.div
+                      key={bell.id}
+                      layout
+                      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -20, scale: 0.95 }}
+                      transition={{ duration: 0.3, ease: "easeOut" }}
+                      className="flex items-center justify-between rounded-2xl border p-3 bg-background/50"
+                    >
+                      <div><p className="font-semibold">{bell.label}</p><p className="text-sm text-muted-foreground">{bell.time}</p></div>
+                      <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent><DropdownMenuItem onClick={() => openEditDialog(bell)}><Edit className="mr-2 h-4 w-4" /> Edit</DropdownMenuItem><DropdownMenuItem onClick={() => handleDeleteBell(bell.id)} className="text-red-500"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
+                    </motion.div>
+                  ))) : (
+                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-muted-foreground text-center p-4">No bells scheduled.</motion.p>
+                  )}
+                </AnimatePresence>
               </CardContent>
             </Card>
           </TabsContent>
         ))}
       </Tabs>
-      <Dialog open={isAddBellDialogOpen} onOpenChange={setIsAddBellDialogOpen}><DialogTrigger asChild><Button className="gradient-button fixed bottom-20 right-4 h-16 w-16 rounded-full shadow-lg z-10"><Plus className="h-8 w-8" /></Button></DialogTrigger><DialogContent className="sm:max-w-md glass-card"><DialogHeader><DialogTitle>Add New Bell</DialogTitle></DialogHeader><BellForm onSubmit={(e) => handleBellSubmit(e)} /></DialogContent></Dialog>
+      <Dialog open={isAddBellDialogOpen} onOpenChange={setIsAddBellDialogOpen}>
+        <DialogTrigger asChild>
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="fixed bottom-20 right-4 z-10">
+            <Button className="gradient-button h-16 w-16 rounded-full shadow-lg">
+              <Plus className="h-8 w-8" />
+            </Button>
+          </motion.div>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-md glass-card"><DialogHeader><DialogTitle>Add New Bell</DialogTitle></DialogHeader><BellForm onSubmit={(e) => handleBellSubmit(e)} /></DialogContent>
+      </Dialog>
       <Dialog open={isEditBellDialogOpen} onOpenChange={setIsEditBellDialogOpen}><DialogContent className="sm:max-w-md glass-card"><DialogHeader><DialogTitle>Edit Bell</DialogTitle></DialogHeader><BellForm onSubmit={(e) => handleBellSubmit(e, editingBell?.id)} bell={editingBell} /></DialogContent></Dialog>
     </>
   );
