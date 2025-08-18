@@ -71,7 +71,7 @@ const DepartmentSelection = () => {
           <motion.div
             key={dept.name}
             className={cn(
-              "glass-card p-6 flex flex-col items-center justify-center aspect-square cursor-pointer transition-all duration-300",
+              "glass-card p-6 flex flex-col items-center justify-center aspect-square cursor-pointer transition-all duration-300 hover:shadow-primary/30 hover:shadow-xl",
               selected === dept.name ? 'ring-2 ring-sky-400 shadow-sky-500/50 scale-105' : 'ring-0'
             )}
             onClick={() => handleSelect(dept.name)}

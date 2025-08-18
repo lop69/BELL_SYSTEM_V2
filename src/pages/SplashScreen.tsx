@@ -9,7 +9,7 @@ const SplashScreen = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       navigate('/select-department');
-    }, 4000); // 4 seconds for the new animation
+    }, 3000); // Shortened to 3 seconds
 
     return () => clearTimeout(timer);
   }, [navigate]);
@@ -52,7 +52,7 @@ const SplashScreen = () => {
         >
           <motion.div
             animate={{ rotate: [0, -15, 10, -10, 5, 0] }}
-            transition={{ duration: 1.5, delay: 1.5, ease: 'easeInOut' }}
+            transition={{ duration: 1.5, delay: 1.2, ease: 'easeInOut', repeat: Infinity, repeatDelay: 1 }}
           >
             <BellRing className="h-24 w-24 text-primary" />
           </motion.div>
@@ -64,7 +64,7 @@ const SplashScreen = () => {
           className="text-4xl font-bold text-primary"
           initial={{ y: "100%" }}
           animate={{ y: 0 }}
-          transition={{ duration: 0.8, delay: 1.8, ease: 'circOut' }}
+          transition={{ duration: 0.8, delay: 1.5, ease: 'circOut' }}
         >
           Smart Bell Scheduler
         </motion.h1>
@@ -74,7 +74,7 @@ const SplashScreen = () => {
           className="text-muted-foreground"
           initial={{ y: "100%" }}
           animate={{ y: 0 }}
-          transition={{ duration: 0.8, delay: 2.0, ease: 'circOut' }}
+          transition={{ duration: 0.8, delay: 1.7, ease: 'circOut' }}
         >
           Simplifying Campus Time.
         </motion.p>
