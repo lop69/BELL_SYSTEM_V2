@@ -1,6 +1,6 @@
 /*
-  Smart Bell Scheduler - Simplified Firmware
-  -------------------------------------------
+  Smart Bell Scheduler - Simplified Firmware (API v2)
+  ---------------------------------------------------
   This firmware is pre-configured to connect directly to your Wi-Fi and Supabase.
   The complex setup process has been removed for simplicity.
 
@@ -12,13 +12,14 @@
 */
 
 // --- START CONFIGURATION ---
-#define WIFI_SSID "YOUR_WIFI_SSID"
-#define WIFI_PASSWORD "YOUR_WIFI_PASSWORD"
-#define DEVICE_ID "PASTE_YOUR_DEVICE_ID_FROM_SUPABASE_HERE"
+#define WIFI_SSID "OnePlus Nord CE4 5g"
+#define WIFI_PASSWORD "loplop@007"
+#define DEVICE_ID "c18d2575-e72d-455e-b126-7c91884fdb99"
 // --- END CONFIGURATION ---
 
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
+#include <WiFiClientSecure.h> // Required for HTTPS
 #include <ArduinoJson.h>
 
 // Supabase credentials (Hardcoded for this project)
@@ -100,8 +101,14 @@ void fetchSchedule() {
 
   Serial.println("Fetching schedule from Supabase...");
 
+  // Use WiFiClientSecure for HTTPS connections
+  WiFiClientSecure client;
   HTTPClient http;
-  http.begin(EDGE_FUNCTION_URL);
+  
+  // This is needed for HTTPS requests without certificate validation
+  client.setInsecure();
+
+  http.begin(client, EDGE_FUNCTION_URL); // Corrected API call
   http.addHeader("Content-Type", "application/json");
   http.addHeader("apikey", SUPABASE_ANON_KEY);
 
@@ -175,8 +182,14 @@ void checkTestBell() {
         return;
     }
 
+    // Use WiFiClientSecure for HTTPS connections
+    WiFiClientSecure client;
     HTTPClient http;
-    http.begin(TEST_BELL_URL);
+
+    // This is needed for HTTPS requests without certificate validation
+    client.setInsecure();
+
+    http.begin(client, TEST_BELL_URL); // Corrected API call
     http.addHeader("apikey", SUPABASE_ANON_KEY);
     int httpCode = http.GET();
 
@@ -195,6 +208,6 @@ void checkTestBell() {
 
 void ringBell() {
   digitalWrite(RELAY_PIN, HIGH);
-  delay(2000); // Ring for 2 seconds
+  delay(30000); // Ring for 30 seconds
   digitalWrite(RELAY_PIN, LOW);
 }
