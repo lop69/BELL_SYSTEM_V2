@@ -18,7 +18,6 @@ const SignUp = lazy(() => import("./pages/SignUp"));
 const ProtectedRoute = lazy(() => import("./components/ProtectedRoute"));
 const SplashScreen = lazy(() => import("./pages/SplashScreen"));
 const DepartmentSelection = lazy(() => import("./pages/DepartmentSelection"));
-const AddDevice = lazy(() => import("./pages/AddDevice"));
 const Devices = lazy(() => import("./pages/Devices"));
 const HelpAndSupport = lazy(() => import("./pages/HelpAndSupport"));
 
@@ -47,7 +46,6 @@ const App = () => (
                         <Route index element={<Dashboard />} />
                         <Route path="schedules" element={<Schedules />} />
                         <Route path="devices" element={<Devices />} />
-                        <Route path="add-device" element={<AddDevice />} />
                         <Route path="settings" element={<Settings />} />
                         <Route path="support" element={<HelpAndSupport />} />
                       </Route>
