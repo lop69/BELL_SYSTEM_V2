@@ -9,8 +9,7 @@ import { NotificationProvider } from "./contexts/NotificationProvider";
 import FullScreenLoader from "./components/FullScreenLoader";
 
 const Layout = lazy(() => import("./components/Layout"));
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const Schedules = lazy(() => import("./pages/Schedules"));
+const Devices = lazy(() => import("./pages/Devices"));
 const Settings = lazy(() => import("./pages/Settings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const Login = lazy(() => import("./pages/Login"));
@@ -18,8 +17,6 @@ const SignUp = lazy(() => import("./pages/SignUp"));
 const ProtectedRoute = lazy(() => import("./components/ProtectedRoute"));
 const SplashScreen = lazy(() => import("./pages/SplashScreen"));
 const DepartmentSelection = lazy(() => import("./pages/DepartmentSelection"));
-const AddDevice = lazy(() => import("./pages/AddDevice"));
-const Devices = lazy(() => import("./pages/Devices"));
 const HelpAndSupport = lazy(() => import("./pages/HelpAndSupport"));
 
 const queryClient = new QueryClient();
@@ -44,10 +41,7 @@ const App = () => (
                     <Route path="/signup" element={<SignUp />} />
                     <Route element={<ProtectedRoute />}>
                       <Route path="/app" element={<Layout />}>
-                        <Route index element={<Dashboard />} />
-                        <Route path="schedules" element={<Schedules />} />
-                        <Route path="devices" element={<Devices />} />
-                        <Route path="add-device" element={<AddDevice />} />
+                        <Route index element={<Devices />} />
                         <Route path="settings" element={<Settings />} />
                         <Route path="support" element={<HelpAndSupport />} />
                       </Route>
