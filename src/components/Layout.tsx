@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { Home, Calendar, Wifi, Settings } from "lucide-react";
+import { Home, Calendar, HardDrive, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import Header from "./Header";
@@ -10,7 +10,7 @@ const Layout = () => {
   const navItems = [
     { to: "/app", icon: Home, label: "Dashboard" },
     { to: "/app/schedules", icon: Calendar, label: "Schedule" },
-    { to: "/app/connection", icon: Wifi, label: "Connection" },
+    { to: "/app/devices", icon: HardDrive, label: "Devices" },
     { to: "/app/settings", icon: Settings, label: "Settings" },
   ];
 
