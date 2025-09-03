@@ -5,56 +5,34 @@ import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Bell, CheckCircle, Plus, Trash2, Edit, Loader2, MoreVertical } from "lucide-react";
+import { Bell, CheckCircle, Plus, Trash2, Loader2 } from "lucide-react";
 import { Schedule, ScheduleGroup } from "@/types/database";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { scheduleFormSchema, ScheduleFormValues } from "@/lib/schemas";
-import { useAuth } from "@/contexts/AuthProvider";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { logUserAction } from "@/lib/logger";
-import { showError, showSuccess } from "@/utils/toast";
 import BellManagementDialog from './BellManagementDialog';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
+import { useSchedules } from '@/hooks/useSchedules';
 
 interface ScheduleGroupItemProps {
   group: ScheduleGroup;
 }
 
 const ScheduleForm = ({ groupId, onFinished }: { groupId: string, onFinished: () => void }) => {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const { addSchedule, isAddingSchedule } = useSchedules();
   const form = useForm<ScheduleFormValues>({
     resolver: zodResolver(scheduleFormSchema),
     defaultValues: { name: "" },
   });
 
-  const scheduleMutation = useMutation({
-    mutationFn: async (values: ScheduleFormValues) => {
-      if (!user) throw new Error("User not authenticated");
-      logUserAction(user, 'CREATE_SCHEDULE', { name: values.name, groupId });
-      const { data, error } = await supabase
-        .from("schedules")
-        .insert({ name: values.name, user_id: user.id, schedule_group_id: groupId })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      showSuccess("Schedule created!");
-      onFinished();
-    },
-    onError: (error) => showError(error.message),
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['scheduleGroups'] });
-    },
-  });
+  const handleSubmit = (values: ScheduleFormValues) => {
+    addSchedule({ values, groupId }, {
+      onSuccess: onFinished,
+    });
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit((v) => scheduleMutation.mutate(v))} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="name"
@@ -68,8 +46,8 @@ const ScheduleForm = ({ groupId, onFinished }: { groupId: string, onFinished: ()
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full gradient-button" disabled={scheduleMutation.isPending}>
-          {scheduleMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        <Button type="submit" className="w-full gradient-button" disabled={isAddingSchedule}>
+          {isAddingSchedule && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Create Schedule
         </Button>
       </form>
@@ -78,36 +56,10 @@ const ScheduleForm = ({ groupId, onFinished }: { groupId: string, onFinished: ()
 };
 
 const ScheduleGroupItem = ({ group }: ScheduleGroupItemProps) => {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
   const [isAddScheduleOpen, setIsAddScheduleOpen] = useState(false);
   const [isBellDialogOpen, setIsBellDialogOpen] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState<Schedule | null>(null);
-
-  const deleteGroupMutation = useMutation({
-    mutationFn: async (groupId: string) => {
-      logUserAction(user, 'DELETE_SCHEDULE_GROUP', { groupId });
-      const { error } = await supabase.from("schedule_groups").delete().eq("id", groupId);
-      if (error) throw error;
-    },
-    onSuccess: () => showSuccess("Group deleted."),
-    onError: (error) => showError(error.message),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['scheduleGroups'] }),
-  });
-
-  const setActiveScheduleMutation = useMutation({
-    mutationFn: async (scheduleId: string) => {
-      logUserAction(user, 'SET_ACTIVE_SCHEDULE', { scheduleId, groupId: group.id });
-      const { error } = await supabase.rpc('set_active_schedule', {
-        target_schedule_id: scheduleId,
-        target_group_id: group.id,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => showSuccess("Active schedule updated."),
-    onError: (error) => showError(error.message),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['scheduleGroups'] }),
-  });
+  const { deleteGroup, setActive, isSettingActive } = useSchedules();
 
   const handleManageBells = (schedule: Schedule) => {
     setSelectedSchedule(schedule);
@@ -120,7 +72,7 @@ const ScheduleGroupItem = ({ group }: ScheduleGroupItemProps) => {
         <AccordionTrigger className="p-4 hover:no-underline">
           <div className="flex justify-between items-center w-full">
             <CardTitle>{group.name}</CardTitle>
-            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); deleteGroupMutation.mutate(group.id); }}>
+            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); deleteGroup(group.id); }}>
               <Trash2 className="h-4 w-4 text-destructive" />
             </Button>
           </div>
@@ -143,7 +95,7 @@ const ScheduleGroupItem = ({ group }: ScheduleGroupItemProps) => {
                       <Bell className="mr-2 h-4 w-4" /> Manage Bells
                     </Button>
                     {!schedule.is_active && (
-                      <Button size="sm" onClick={() => setActiveScheduleMutation.mutate(schedule.id)} disabled={setActiveScheduleMutation.isPending}>
+                      <Button size="sm" onClick={() => setActive({ scheduleId: schedule.id, groupId: group.id })} disabled={isSettingActive}>
                         Set Active
                       </Button>
                     )}

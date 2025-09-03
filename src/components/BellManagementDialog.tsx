@@ -3,11 +3,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2, BellOff } from "lucide-react";
 import { Schedule, Bell } from "@/types/database";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthProvider";
-import { logUserAction } from "@/lib/logger";
-import { showError, showSuccess } from "@/utils/toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { bellFormSchema, BellFormValues } from "@/lib/schemas";
@@ -17,22 +12,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AnimatePresence, motion } from "framer-motion";
 import BellItem from './BellItem';
-
-// --- Data Fetching & Keys ---
-const bellsQueryKey = (scheduleId: string) => ['bells', scheduleId];
-
-export const fetchBellsForSchedule = async (scheduleId: string) => {
-  const { data, error } = await supabase.from("bells").select("*").eq("schedule_id", scheduleId).order("time", { ascending: true });
-  if (error) throw new Error(error.message);
-  return data || [];
-};
+import { useBells } from '@/hooks/useBells';
 
 const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-// --- Bell Form Component ---
-const BellForm = ({ scheduleId, bell, onFinished }: { scheduleId: string, bell?: Bell, onFinished: () => void }) => {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
+const BellForm = ({ scheduleId, bell, onFinished, isSubmitting, onSubmit }: { scheduleId: string, bell?: Bell, onFinished: () => void, isSubmitting: boolean, onSubmit: (values: BellFormValues) => void }) => {
   const form = useForm<BellFormValues>({
     resolver: zodResolver(bellFormSchema),
     defaultValues: {
@@ -43,32 +27,9 @@ const BellForm = ({ scheduleId, bell, onFinished }: { scheduleId: string, bell?:
     },
   });
 
-  const bellMutation = useMutation({
-    mutationFn: async (values: BellFormValues) => {
-      if (!user) throw new Error("User not authenticated");
-      const action = bell ? 'UPDATE_BELL' : 'CREATE_BELL';
-      logUserAction(user, action, { bellId: bell?.id, scheduleId: values.schedule_id, label: values.label });
-      
-      const bellData = { ...values, user_id: user.id };
-      const { data, error } = bell
-        ? await supabase.from("bells").update(bellData).eq("id", bell.id).select().single()
-        : await supabase.from("bells").insert(bellData).select().single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      showSuccess(`Bell ${bell ? 'updated' : 'added'} successfully!`);
-      onFinished();
-    },
-    onError: (error) => showError(error.message),
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: bellsQueryKey(scheduleId) });
-    }
-  });
-
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit((v) => bellMutation.mutate(v))} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField control={form.control} name="time" render={({ field }) => (<FormItem><FormLabel>Time</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="label" render={({ field }) => (<FormItem><FormLabel>Label</FormLabel><FormControl><Input placeholder="e.g., Lunch Break" {...field} /></FormControl><FormMessage /></FormItem>)} />
         <FormField control={form.control} name="days_of_week" render={() => (
@@ -80,8 +41,8 @@ const BellForm = ({ scheduleId, bell, onFinished }: { scheduleId: string, bell?:
             )} />
           ))}</div><FormMessage /></FormItem>
         )} />
-        <Button type="submit" className="w-full gradient-button" disabled={bellMutation.isPending}>
-          {bellMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        <Button type="submit" className="w-full gradient-button" disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {bell ? 'Save Changes' : 'Add Bell'}
         </Button>
       </form>
@@ -89,7 +50,6 @@ const BellForm = ({ scheduleId, bell, onFinished }: { scheduleId: string, bell?:
   );
 };
 
-// --- Main Dialog Component ---
 interface BellManagementDialogProps {
   schedule: Schedule;
   isOpen: boolean;
@@ -97,27 +57,9 @@ interface BellManagementDialogProps {
 }
 
 const BellManagementDialog = ({ schedule, isOpen, onOpenChange }: BellManagementDialogProps) => {
-  const queryClient = useQueryClient();
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [editingBell, setEditingBell] = useState<Bell | null>(null);
-
-  const { data: bells = [], isLoading } = useQuery<Bell[]>({
-    queryKey: bellsQueryKey(schedule.id),
-    queryFn: () => fetchBellsForSchedule(schedule.id),
-    enabled: isOpen,
-  });
-
-  const deleteBellMutation = useMutation({
-    mutationFn: async (bellId: string) => {
-      const { error } = await supabase.from("bells").delete().eq("id", bellId);
-      if (error) throw error;
-    },
-    onSuccess: () => showSuccess("Bell deleted."),
-    onError: (error) => showError(error.message),
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: bellsQueryKey(schedule.id) });
-    }
-  });
+  const { bells, isLoading, manageBell, isManagingBell, deleteBell } = useBells(schedule.id);
 
   const handleEdit = useCallback((bell: Bell) => {
     setEditingBell(bell);
@@ -132,6 +74,12 @@ const BellManagementDialog = ({ schedule, isOpen, onOpenChange }: BellManagement
   const handleFormFinished = () => {
     setIsFormVisible(false);
     setEditingBell(null);
+  };
+
+  const handleFormSubmit = (values: BellFormValues) => {
+    manageBell({ values, bell: editingBell || undefined }, {
+      onSuccess: handleFormFinished,
+    });
   };
 
   return (
@@ -149,7 +97,7 @@ const BellManagementDialog = ({ schedule, isOpen, onOpenChange }: BellManagement
             <div className="space-y-3">
               <AnimatePresence>
                 {bells.length > 0 ? (
-                  bells.map((bell) => <BellItem key={bell.id} bell={bell} onEdit={handleEdit} onDelete={deleteBellMutation.mutate} />)
+                  bells.map((bell) => <BellItem key={bell.id} bell={bell} onEdit={handleEdit} onDelete={deleteBell} />)
                 ) : (
                   !isFormVisible && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center p-8 flex flex-col items-center gap-4">
@@ -167,7 +115,7 @@ const BellManagementDialog = ({ schedule, isOpen, onOpenChange }: BellManagement
           <AnimatePresence mode="wait">
             {isFormVisible ? (
               <motion.div key="form" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}>
-                <BellForm scheduleId={schedule.id} bell={editingBell || undefined} onFinished={handleFormFinished} />
+                <BellForm scheduleId={schedule.id} bell={editingBell || undefined} onFinished={handleFormFinished} isSubmitting={isManagingBell} onSubmit={handleFormSubmit} />
               </motion.div>
             ) : (
               <motion.div key="button" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>

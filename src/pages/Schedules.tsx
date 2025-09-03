@@ -4,68 +4,32 @@ import { Plus, ServerCrash, Calendar, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion } from "@/components/ui/accordion";
-import { showSuccess, showError } from "@/utils/toast";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthProvider";
-import { ScheduleGroup } from "@/types/database";
 import { Skeleton } from "@/components/ui/skeleton";
 import { motion } from "framer-motion";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { scheduleFormSchema, ScheduleFormValues } from "@/lib/schemas";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { logUserAction } from "@/lib/logger";
 import ScheduleGroupItem from "@/components/ScheduleGroupItem";
+import { useSchedules } from "@/hooks/useSchedules";
 
-// --- Data Fetching & Keys ---
-const scheduleGroupsQueryKey = ['scheduleGroups'];
-
-export const fetchScheduleGroups = async (): Promise<ScheduleGroup[]> => {
-  const { data, error } = await supabase
-    .from("schedule_groups")
-    .select("*, schedules(*)")
-    .order("created_at", { ascending: true });
-
-  if (error) throw new Error(error.message);
-  return (data as ScheduleGroup[]) || [];
-};
-
-// --- Components ---
 const ScheduleGroupForm = ({ onFinished }: { onFinished: () => void }) => {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
+  const { addGroup, isAddingGroup } = useSchedules();
   const form = useForm<ScheduleFormValues>({
     resolver: zodResolver(scheduleFormSchema),
     defaultValues: { name: "" },
   });
 
-  const scheduleGroupMutation = useMutation({
-    mutationFn: async (values: ScheduleFormValues) => {
-      if (!user) throw new Error("User not authenticated");
-      logUserAction(user, 'CREATE_SCHEDULE_GROUP', { name: values.name });
-      const { data, error } = await supabase
-        .from("schedule_groups")
-        .insert({ name: values.name, user_id: user.id })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      showSuccess("Schedule Group created!");
-      onFinished();
-    },
-    onError: (error) => showError(error.message),
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: scheduleGroupsQueryKey });
-    },
-  });
+  const handleSubmit = (values: ScheduleFormValues) => {
+    addGroup(values, {
+      onSuccess: onFinished,
+    });
+  };
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit((v) => scheduleGroupMutation.mutate(v))} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="name"
@@ -79,8 +43,8 @@ const ScheduleGroupForm = ({ onFinished }: { onFinished: () => void }) => {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full gradient-button" disabled={scheduleGroupMutation.isPending}>
-          {scheduleGroupMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        <Button type="submit" className="w-full gradient-button" disabled={isAddingGroup}>
+          {isAddingGroup && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Create Group
         </Button>
       </form>
@@ -90,11 +54,7 @@ const ScheduleGroupForm = ({ onFinished }: { onFinished: () => void }) => {
 
 const Schedules = () => {
   const [isAddGroupOpen, setIsAddGroupOpen] = useState(false);
-
-  const { data: scheduleGroups = [], isLoading, isError } = useQuery<ScheduleGroup[]>({
-    queryKey: scheduleGroupsQueryKey,
-    queryFn: fetchScheduleGroups,
-  });
+  const { scheduleGroups, isLoading, isError } = useSchedules();
 
   if (isLoading) {
     return (

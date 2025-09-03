@@ -34,3 +34,16 @@ export interface ScheduleGroup {
   created_at: string;
   schedules: Schedule[];
 }
+
+export interface Device {
+  id: string;
+  device_name: string;
+  is_connected: boolean;
+  last_seen: string | null;
+  schedule_groups: {
+    schedules: {
+      name: string;
+      is_active: boolean;
+    }[];
+  } | null;
+}

@@ -1,33 +1,11 @@
-import { useAuth } from "@/contexts/AuthProvider";
-import { User, Bell, LogOut, Palette, Edit, ShieldAlert, LifeBuoy, Phone, Building, Briefcase, Loader2 } from "lucide-react";
-import { ThemeToggle } from "@/components/ThemeToggle";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
-import { useNavigate } from "react-router-dom";
+import { Accordion } from "@/components/ui/accordion";
 import { Skeleton } from "@/components/ui/skeleton";
-import { logUserAction } from "@/lib/logger";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-
-const profileFormSchema = z.object({
-  first_name: z.string().min(1, "First name is required."),
-  last_name: z.string().min(1, "Last name is required."),
-  phone_number: z.string().optional(),
-  department: z.string().min(1, "Department is required."),
-  role: z.string().min(1, "Role is required."),
-});
-
-type ProfileFormValues = z.infer<typeof profileFormSchema>;
+import { useAuth } from "@/contexts/AuthProvider";
+import ProfileSettings from "./settings/ProfileSettings";
+import AppearanceSettings from "./settings/AppearanceSettings";
+import NotificationSettings from "./settings/NotificationSettings";
+import DangerZone from "./settings/DangerZone";
+import HelpAndSupportSettings from "./settings/HelpAndSupportSettings";
 
 const SettingsSkeleton = () => (
   <div className="space-y-6">
@@ -45,78 +23,9 @@ const SettingsSkeleton = () => (
 );
 
 const Settings = () => {
-  const { signOut, user, profile: authProfile, updateProfile } = useAuth();
-  const navigate = useNavigate();
-  const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+  const { profile } = useAuth();
 
-  const form = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileFormSchema),
-    defaultValues: {
-      first_name: "",
-      last_name: "",
-      phone_number: "",
-      department: "",
-      role: "",
-    },
-  });
-
-  useEffect(() => {
-    if (authProfile) {
-      form.reset({
-        first_name: authProfile.first_name || "",
-        last_name: authProfile.last_name || "",
-        phone_number: authProfile.phone_number || "",
-        department: authProfile.department || "",
-        role: authProfile.role || "",
-      });
-    }
-  }, [authProfile, form]);
-
-  const handleProfileUpdate = async (values: ProfileFormValues) => {
-    if (!user) return;
-
-    logUserAction(user, 'UPDATE_PROFILE', { updatedFields: Object.keys(values) });
-    const toastId = showLoading("Updating profile...");
-    try {
-      await updateProfile(values);
-      dismissToast(toastId);
-      showSuccess("Profile updated successfully!");
-      setIsProfileDialogOpen(false);
-    } catch (error) {
-      dismissToast(toastId);
-      showError("Failed to update profile.");
-    }
-  };
-
-  const handleDeleteAccount = async () => {
-    logUserAction(user, 'DELETE_ACCOUNT');
-    const toastId = showLoading("Deleting your account...");
-    try {
-      const { error } = await supabase.functions.invoke("delete-user");
-      if (error) throw error;
-      showSuccess("Account deleted successfully.");
-      signOut();
-    } catch (error) {
-      showError("Failed to delete account. Please try again.");
-    } finally {
-      dismissToast(toastId);
-    }
-  };
-
-  const handleNotificationChange = async (key: 'push_notifications_enabled' | 'email_summary_enabled', value: boolean) => {
-    logUserAction(user, 'UPDATE_NOTIFICATION_SETTINGS', { setting: key, value });
-    const toastId = showLoading("Updating notification settings...");
-    try {
-      await updateProfile({ [key]: value });
-      dismissToast(toastId);
-      showSuccess("Settings updated!");
-    } catch (error) {
-      dismissToast(toastId);
-      showError("Failed to update settings.");
-    }
-  };
-
-  if (!authProfile) {
+  if (!profile) {
     return <SettingsSkeleton />;
   }
 
@@ -127,87 +36,11 @@ const Settings = () => {
         <p className="text-muted-foreground">Manage your application settings.</p>
       </div>
       <Accordion type="single" collapsible className="w-full" defaultValue="item-1">
-        <AccordionItem value="item-1">
-          <AccordionTrigger>
-            <div className="flex items-center gap-3"><User className="h-5 w-5" /> Account</div>
-          </AccordionTrigger>
-          <AccordionContent className="space-y-4 p-2">
-            <div className="rounded-lg border p-4">
-              <p className="font-semibold">{`${authProfile?.first_name || ""} ${authProfile?.last_name || ""}`.trim() || user?.email}</p>
-              <p className="text-sm text-muted-foreground">{`${authProfile?.role || "User"} - ${authProfile?.department || "No Department"}`}</p>
-            </div>
-            <Dialog open={isProfileDialogOpen} onOpenChange={setIsProfileDialogOpen}>
-              <DialogTrigger asChild><Button variant="outline" className="w-full"><Edit className="mr-2 h-4 w-4" /> Edit Profile</Button></DialogTrigger>
-              <DialogContent className="glass-card">
-                <DialogHeader><DialogTitle>Edit Profile</DialogTitle><DialogDescription>Update your personal and professional information.</DialogDescription></DialogHeader>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(handleProfileUpdate)} className="space-y-4 pt-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField control={form.control} name="first_name" render={({ field }) => (<FormItem><FormLabel>First Name</FormLabel><FormControl><Input {...field} className="glass-input" /></FormControl><FormMessage /></FormItem>)} />
-                      <FormField control={form.control} name="last_name" render={({ field }) => (<FormItem><FormLabel>Last Name</FormLabel><FormControl><Input {...field} className="glass-input" /></FormControl><FormMessage /></FormItem>)} />
-                    </div>
-                    <FormField control={form.control} name="phone_number" render={({ field }) => (<FormItem><FormLabel>Phone Number</FormLabel><div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input type="tel" {...field} className="pl-10 glass-input" /></FormControl></div><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="department" render={({ field }) => (<FormItem><FormLabel>Department</FormLabel><div className="relative"><Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input {...field} className="pl-10 glass-input" /></FormControl></div><FormMessage /></FormItem>)} />
-                    <FormField control={form.control} name="role" render={({ field }) => (<FormItem><FormLabel>Role</FormLabel><div className="relative"><Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input {...field} className="pl-10 glass-input" /></FormControl></div><FormMessage /></FormItem>)} />
-                    <DialogFooter>
-                      <Button type="submit" className="gradient-button" disabled={form.formState.isSubmitting}>
-                        {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Save Changes
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
-            <Button variant="destructive" className="w-full" onClick={signOut}><LogOut className="mr-2 h-4 w-4" /> Sign Out</Button>
-          </AccordionContent>
-        </AccordionItem>
-        <AccordionItem value="item-2">
-          <AccordionTrigger>
-            <div className="flex items-center gap-3"><Palette className="h-5 w-5" /> Appearance</div>
-          </AccordionTrigger>
-          <AccordionContent className="p-4 flex items-center justify-between">
-            <Label htmlFor="theme-mode">Toggle Light/Dark Mode</Label>
-            <ThemeToggle />
-          </AccordionContent>
-        </AccordionItem>
-        <AccordionItem value="item-3">
-          <AccordionTrigger>
-            <div className="flex items-center gap-3"><Bell className="h-5 w-5" /> Notifications</div>
-          </AccordionTrigger>
-          <AccordionContent className="p-4 space-y-4">
-            <div className="flex items-center justify-between"><Label htmlFor="push-notifications">Push Notifications</Label><Switch id="push-notifications" checked={authProfile.push_notifications_enabled ?? true} onCheckedChange={(c) => handleNotificationChange('push_notifications_enabled', c)} /></div>
-            <div className="flex items-center justify-between"><Label htmlFor="email-summary">Email Summary</Label><Switch id="email-summary" checked={authProfile.email_summary_enabled ?? true} onCheckedChange={(c) => handleNotificationChange('email_summary_enabled', c)} /></div>
-          </AccordionContent>
-        </AccordionItem>
-        <AccordionItem value="item-4">
-          <AccordionTrigger>
-            <div className="flex items-center gap-3"><LifeBuoy className="h-5 w-5" /> Help & Support</div>
-          </AccordionTrigger>
-          <AccordionContent className="p-4 space-y-2">
-            <Button variant="link" className="p-0 h-auto" onClick={() => navigate('/app/support')}>Contact Support</Button>
-            <Button variant="link" className="p-0 h-auto">FAQs</Button>
-          </AccordionContent>
-        </AccordionItem>
-        <AccordionItem value="item-5">
-          <AccordionTrigger>
-            <div className="flex items-center gap-3 text-red-500"><ShieldAlert className="h-5 w-5" /> Danger Zone</div>
-          </AccordionTrigger>
-          <AccordionContent className="p-4">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" className="w-full">Delete Account</Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader><AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle><AlertDialogDescription>This action cannot be undone. This will permanently delete your account and remove your data from our servers.</AlertDialogDescription></AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDeleteAccount} className="bg-red-600 hover:bg-red-700">Continue</AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </AccordionContent>
-        </AccordionItem>
+        <ProfileSettings />
+        <AppearanceSettings />
+        <NotificationSettings />
+        <HelpAndSupportSettings />
+        <DangerZone />
       </Accordion>
     </div>
   );

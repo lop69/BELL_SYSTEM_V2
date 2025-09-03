@@ -1,64 +1,22 @@
-import React, { useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Wifi, WifiOff, HardDrive, ServerCrash } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
+import { useDevices } from "@/hooks/useDevices";
+import { Device } from "@/types/database";
 
-interface Device {
-  id: string;
-  device_name: string;
-  is_connected: boolean;
-  last_seen: string;
-  schedule_groups: {
-    schedules: {
-      name: string;
-      is_active: boolean;
-    }[];
-  } | null;
-}
-
-export const fetchDevices = async () => {
-  const { data, error } = await supabase
-    .from("devices")
-    .select("*, schedule_groups(schedules(name, is_active))");
-  if (error) throw new Error(error.message);
-  return (data as any[]) || [];
+const getActiveScheduleName = (device: Device): string => {
+  if (!device.schedule_groups || !device.schedule_groups.schedules || device.schedule_groups.schedules.length === 0) {
+    return "Unassigned";
+  }
+  const activeSchedule = device.schedule_groups.schedules.find(s => s.is_active);
+  return activeSchedule ? activeSchedule.name : "No Active Schedule";
 };
 
 const Devices = () => {
-  const queryClient = useQueryClient();
-
-  const { data: devices = [], isLoading, isError } = useQuery<Device[]>({
-    queryKey: ['devices'],
-    queryFn: fetchDevices,
-    staleTime: 1000 * 60 * 5, // Cache data for 5 minutes
-  });
-
-  useEffect(() => {
-    const channel = supabase
-      .channel('realtime-devices')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'devices' }, 
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['devices'] });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
-
-  const getActiveScheduleName = (device: Device): string => {
-    if (!device.schedule_groups || !device.schedule_groups.schedules || device.schedule_groups.schedules.length === 0) {
-      return "Unassigned";
-    }
-    const activeSchedule = device.schedule_groups.schedules.find(s => s.is_active);
-    return activeSchedule ? activeSchedule.name : "No Active Schedule";
-  };
+  const { data: devices = [], isLoading, isError } = useDevices();
 
   if (isLoading) {
     return (

@@ -1,100 +1,51 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  ReactNode,
-} from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Profile } from "@/types/database";
+import { fetchProfile, updateProfile as apiUpdateProfile } from "@/api/profile";
+import { showError, showSuccess } from "@/utils/toast";
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  loading: boolean;
   profile: Profile | null;
-  role: string | null;
-  department: string | null;
+  loading: boolean;
   signOut: () => void;
-  updateProfile: (newProfile: Partial<Profile>) => Promise<void>;
+  updateProfile: (newProfile: Partial<Profile>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const fetchProfile = async (userId: string): Promise<Profile | null> => {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("id, first_name, last_name, phone_number, role, department, push_notifications_enabled, email_summary_enabled")
-    .eq("id", userId)
-    .single();
-
-  // A "not found" error is expected for new users, so we return null instead of throwing.
-  if (error && error.code !== 'PGRST116') {
-    throw new Error(error.message);
-  }
-
-  return data;
-};
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
   const queryClient = useQueryClient();
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
-  const { data: profile, isLoading: isProfileLoading } = useQuery<Profile | null>({
+  const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: () => fetchProfile(user!.id),
     enabled: !!user,
   });
 
   const profileMutation = useMutation({
-    mutationFn: async (newProfileData: Partial<Profile>) => {
-      if (!user) throw new Error("User not authenticated");
-      const { data, error } = await supabase
-        .from("profiles")
-        .update(newProfileData)
-        .eq("id", user.id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
-    },
+    mutationFn: (newProfileData: Partial<Profile>) => apiUpdateProfile(user!.id, newProfileData),
     onSuccess: (data) => {
       queryClient.setQueryData(['profile', user?.id], data);
+      showSuccess("Profile updated successfully!");
     },
+    onError: () => {
+      showError("Failed to update profile.");
+    }
   });
 
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setAuthLoading(true);
-        setSession(session);
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-
-        if (currentUser) {
-          if (event === 'SIGNED_IN') {
-            const storedRole = localStorage.getItem('signUpRole');
-            const storedDepartment = localStorage.getItem('signUpDepartment');
-
-            if (storedRole && storedDepartment) {
-              await supabase
-                .from('profiles')
-                .update({ role: storedRole, department: storedDepartment })
-                .eq('id', currentUser.id);
-              
-              localStorage.removeItem('signUpRole');
-              localStorage.removeItem('signUpDepartment');
-            }
-          }
-        }
-        
-        setAuthLoading(false);
-      }
-    );
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    });
 
     return () => {
       authListener.subscription.unsubscribe();
@@ -107,14 +58,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const value = {
-    session,
     user,
-    loading: authLoading || (!!user && isProfileLoading),
+    session,
     profile: profile ?? null,
-    role: profile?.role || null,
-    department: profile?.department || null,
+    loading: authLoading || (!!user && profileLoading),
     signOut,
-    updateProfile: profileMutation.mutateAsync,
+    updateProfile: profileMutation.mutate,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
