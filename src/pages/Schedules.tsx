@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, "use client";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, MoreVertical, Trash2, Edit, Loader2, ServerCrash, BellOff, Calendar } from "lucide-react";
+import { Plus, Trash2, Loader2, ServerCrash, BellOff, Calendar } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,11 +48,16 @@ const BellForm = ({ schedules, activeTab, bell, onFinished }: { schedules: Sched
 
   const form = useForm<BellFormValues>({
     resolver: zodResolver(bellFormSchema),
-    defaultValues: {
-      schedule_id: bell?.schedule_id || activeTab || "",
-      time: bell?.time || "",
-      label: bell?.label || "",
-      days_of_week: bell?.days_of_week || [0, 1, 2, 3, 4, 5, 6],
+    defaultValues: bell ? {
+      schedule_id: bell.schedule_id,
+      time: bell.time,
+      label: bell.label,
+      days_of_week: bell.days_of_week,
+    } : {
+      schedule_id: activeTab || "",
+      time: "",
+      label: "",
+      days_of_week: [0, 1, 2, 3, 4, 5, 6],
     },
   });
 
@@ -61,18 +67,43 @@ const BellForm = ({ schedules, activeTab, bell, onFinished }: { schedules: Sched
       const action = bell ? 'UPDATE_BELL' : 'CREATE_BELL';
       logUserAction(user, action, { bellId: bell?.id, scheduleId: values.schedule_id, label: values.label });
       
-      const bellData = { ...values, user_id: user.id };
       const { error } = bell
-        ? await supabase.from("bells").update(bellData).eq("id", bell.id)
-        : await supabase.from("bells").insert(bellData);
+        ? await supabase.from("bells").update(values).eq("id", bell.id).select().single()
+        : await supabase.from("bells").insert(values).select().single();
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bells'] });
-      showSuccess(`Bell ${bell ? 'updated' : 'added'} successfully!`);
+    onMutate: async (newBellData: BellFormValues) => {
+      await queryClient.cancelQueries({ queryKey: bellsQueryKey(newBellData.schedule_id) });
+      const previousBells = queryClient.getQueryData<Bell[]>(bellsQueryKey(newBellData.schedule_id)) || [];
+      
+      if (bell) { // Optimistic Update
+        queryClient.setQueryData<Bell[]>(bellsQueryKey(newBellData.schedule_id), old =>
+          old?.map(b => b.id === bell.id ? { ...b, ...newBellData } : b) || []
+        );
+      } else { // Optimistic Create
+        const optimisticBell: Bell = {
+          id: `temp-${Date.now()}`,
+          created_at: new Date().toISOString(),
+          user_id: user!.id,
+          ...newBellData
+        };
+        queryClient.setQueryData<Bell[]>(bellsQueryKey(newBellData.schedule_id), old => [...(old || []), optimisticBell]);
+      }
       onFinished();
+      return { previousBells, scheduleId: newBellData.schedule_id };
     },
-    onError: (error) => showError(error.message),
+    onError: (err, _, context) => {
+      showError(err.message);
+      if (context) {
+        queryClient.setQueryData(bellsQueryKey(context.scheduleId), context.previousBells);
+      }
+    },
+    onSettled: (data, error, variables) => {
+      queryClient.invalidateQueries({ queryKey: bellsQueryKey(variables.schedule_id) });
+      if (!error) {
+        showSuccess(`Bell ${bell ? 'updated' : 'added'} successfully!`);
+      }
+    },
   });
 
   return (
@@ -110,15 +141,18 @@ const ScheduleForm = ({ onFinished }: { onFinished: () => void }) => {
     mutationFn: async (values: ScheduleFormValues) => {
       if (!user) throw new Error("User not authenticated");
       logUserAction(user, 'CREATE_SCHEDULE', { name: values.name });
-      const { error } = await supabase.from("schedules").insert({ name: values.name, user_id: user.id });
+      const { data, error } = await supabase.from("schedules").insert({ name: values.name }).select().single();
       if (error) throw error;
+      return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: schedulesQueryKey });
       showSuccess("Schedule created!");
       onFinished();
     },
     onError: (error) => showError(error.message),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: schedulesQueryKey });
+    }
   });
 
   return (
@@ -138,7 +172,6 @@ const ScheduleBells = React.memo(({ scheduleId, onEdit, onDelete }: { scheduleId
   const { data: bells = [], isLoading } = useQuery<Bell[]>({
     queryKey: bellsQueryKey(scheduleId),
     queryFn: () => fetchBellsForSchedule(scheduleId),
-    staleTime: 1000 * 60 * 5, // Cache data for 5 minutes
   });
 
   if (isLoading) return <div className="space-y-3"><Skeleton className="h-16 w-full" /><Skeleton className="h-16 w-full" /></div>;
@@ -169,7 +202,6 @@ const Schedules = () => {
   const { data: schedules = [], isLoading: schedulesLoading, isError: schedulesError } = useQuery<Schedule[]>({
     queryKey: schedulesQueryKey,
     queryFn: fetchSchedules,
-    staleTime: 1000 * 60 * 5, // Cache data for 5 minutes
   });
 
   useEffect(() => {
@@ -177,21 +209,6 @@ const Schedules = () => {
       setActiveTab(schedules[0].id);
     }
   }, [schedules, activeTab]);
-
-  useEffect(() => {
-    const handleChanges = () => {
-      queryClient.invalidateQueries({ queryKey: schedulesQueryKey });
-      if (activeTab) {
-        queryClient.invalidateQueries({ queryKey: bellsQueryKey(activeTab) });
-      }
-    };
-
-    const channel = supabase.channel('public-db-changes').on('postgres_changes', { event: '*', schema: 'public' }, handleChanges).subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient, activeTab]);
 
   const activeIndex = schedules.findIndex(s => s.id === activeTab);
 
@@ -201,12 +218,26 @@ const Schedules = () => {
       const { error } = await supabase.from("schedules").delete().eq("id", scheduleId);
       if (error) throw error;
     },
-    onSuccess: (_, scheduleId) => {
-      showSuccess("Schedule deleted.");
-      const newSchedules = schedules.filter(s => s.id !== scheduleId);
-      setActiveTab(newSchedules.length > 0 ? newSchedules[0].id : undefined);
+    onMutate: async (scheduleId: string) => {
+      await queryClient.cancelQueries({ queryKey: schedulesQueryKey });
+      const previousSchedules = queryClient.getQueryData<Schedule[]>(schedulesQueryKey) || [];
+      const newSchedules = previousSchedules.filter(s => s.id !== scheduleId);
+      queryClient.setQueryData<Schedule[]>(schedulesQueryKey, newSchedules);
+      
+      const newActiveIndex = Math.max(0, activeIndex - 1);
+      setActiveTab(newSchedules.length > 0 ? newSchedules[newActiveIndex].id : undefined);
+
+      return { previousSchedules };
     },
-    onError: (error) => showError(error.message),
+    onError: (err, _, context) => {
+      showError(err.message);
+      if (context) {
+        queryClient.setQueryData(schedulesQueryKey, context.previousSchedules);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: schedulesQueryKey });
+    },
   });
 
   const deleteBellMutation = useMutation({
@@ -215,8 +246,25 @@ const Schedules = () => {
       const { error } = await supabase.from("bells").delete().eq("id", bellId);
       if (error) throw error;
     },
-    onSuccess: () => showSuccess("Bell deleted."),
-    onError: (error) => showError(error.message),
+    onMutate: async (bellId: string) => {
+      if (!activeTab) return;
+      const currentBellsKey = bellsQueryKey(activeTab);
+      await queryClient.cancelQueries({ queryKey: currentBellsKey });
+      const previousBells = queryClient.getQueryData<Bell[]>(currentBellsKey) || [];
+      queryClient.setQueryData<Bell[]>(currentBellsKey, previousBells.filter(b => b.id !== bellId));
+      return { previousBells, bellKey: currentBellsKey };
+    },
+    onError: (err, _, context) => {
+      showError(err.message);
+      if (context) {
+        queryClient.setQueryData(context.bellKey, context.previousBells);
+      }
+    },
+    onSettled: (_, __, ___, context) => {
+      if (context) {
+        queryClient.invalidateQueries({ queryKey: context.bellKey });
+      }
+    },
   });
 
   const handleEditBell = useCallback((bell: Bell) => {
@@ -294,8 +342,8 @@ const Schedules = () => {
       </Tabs>
 
       <>
-        <Dialog open={dialogs.addBell} onOpenChange={(open) => setDialogs(d => ({ ...d, addBell: open }))}><DialogTrigger asChild><motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="fixed bottom-24 right-4 z-10"><Button className="gradient-button h-16 w-16 rounded-full shadow-lg" disabled={schedules.length === 0}><Plus className="h-8 w-8" /></Button></motion.div></DialogTrigger><DialogContent className="sm:max-w-md glass-card"><DialogHeader><DialogTitle>Add New Bell</DialogTitle></DialogHeader><BellForm schedules={schedules} activeTab={activeTab} onFinished={() => setDialogs(d => ({ ...d, addBell: false }))} /></DialogContent></Dialog>
-        <Dialog open={dialogs.editBell} onOpenChange={(open) => setDialogs(d => ({ ...d, editBell: open }))}><DialogContent className="sm:max-w-md glass-card"><DialogHeader><DialogTitle>Edit Bell</DialogTitle></DialogHeader>{editingBell && <BellForm schedules={schedules} bell={editingBell} onFinished={() => setDialogs(d => ({ ...d, editBell: false }))} />}</DialogContent></Dialog>
+        <Dialog open={dialogs.addBell} onOpenChange={(open) => setDialogs(d => ({ ...d, addBell: false }))}><DialogTrigger asChild><motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} className="fixed bottom-24 right-4 z-10"><Button className="gradient-button h-16 w-16 rounded-full shadow-lg" disabled={schedules.length === 0}><Plus className="h-8 w-8" /></Button></motion.div></DialogTrigger><DialogContent className="sm:max-w-md glass-card"><DialogHeader><DialogTitle>Add New Bell</DialogTitle></DialogHeader><BellForm schedules={schedules} activeTab={activeTab} onFinished={() => setDialogs(d => ({ ...d, addBell: false }))} /></DialogContent></Dialog>
+        <Dialog open={dialogs.editBell} onOpenChange={(open) => setDialogs(d => ({ ...d, editBell: false }))}><DialogContent className="sm:max-w-md glass-card"><DialogHeader><DialogTitle>Edit Bell</DialogTitle></DialogHeader>{editingBell && <BellForm schedules={schedules} bell={editingBell} onFinished={() => setDialogs(d => ({ ...d, editBell: false }))} />}</DialogContent></Dialog>
       </>
     </div>
   );
