@@ -36,10 +36,10 @@ export const fetchProfile = async (userId: string): Promise<Profile | null> => {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
   const queryClient = useQueryClient();
 
-  const { data: profile } = useQuery<Profile | null>({
+  const { data: profile, isLoading: isProfileLoading } = useQuery<Profile | null>({
     queryKey: ['profile', user?.id],
     queryFn: () => fetchProfile(user!.id),
     enabled: !!user,
@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setLoading(true);
+        setAuthLoading(true);
         setSession(session);
         const currentUser = session?.user ?? null;
         setUser(currentUser);
@@ -87,7 +87,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
         }
         
-        setLoading(false);
+        setAuthLoading(false);
       }
     );
 
@@ -104,7 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value = {
     session,
     user,
-    loading,
+    loading: authLoading || (!!user && isProfileLoading),
     profile: profile ?? null,
     role: profile?.role || null,
     department: profile?.department || null,
