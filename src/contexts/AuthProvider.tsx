@@ -29,7 +29,12 @@ export const fetchProfile = async (userId: string): Promise<Profile | null> => {
     .select("id, first_name, last_name, phone_number, role, department, push_notifications_enabled, email_summary_enabled")
     .eq("id", userId)
     .single();
-  if (error) throw new Error(error.message);
+
+  // A "not found" error is expected for new users, so we return null instead of throwing.
+  if (error && error.code !== 'PGRST116') {
+    throw new Error(error.message);
+  }
+
   return data;
 };
 
