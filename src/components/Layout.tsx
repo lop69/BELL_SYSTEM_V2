@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence, Transition } from "framer-motion";
 import Header from "./Header";
 import { useEffect, useRef, useState } from "react";
-import { useAuth } from "@/contexts/AuthProvider";
+import { useAuth, fetchProfile } from "@/contexts/AuthProvider";
 import { useQueryClient } from "@tanstack/react-query";
 import { fetchSchedules, fetchBellsForSchedule } from "@/pages/Schedules";
 import { fetchDevices } from "@/pages/Devices";
@@ -76,6 +76,10 @@ const Layout = () => {
         queryClient.prefetchQuery({ 
           queryKey: ['devices'], 
           queryFn: fetchDevices 
+        }),
+        queryClient.prefetchQuery({
+          queryKey: ['profile', user.id],
+          queryFn: () => fetchProfile(user.id),
         })
       ]);
 

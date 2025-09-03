@@ -14,3 +14,14 @@ export interface Bell {
   days_of_week: number[];
   created_at: string;
 }
+
+export interface Profile {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  phone_number: string | null;
+  role: string | null;
+  department: string | null;
+  push_notifications_enabled: boolean | null;
+  email_summary_enabled: boolean | null;
+}
