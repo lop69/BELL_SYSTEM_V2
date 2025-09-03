@@ -60,7 +60,6 @@ const Login = () => {
       if (error) {
         showError(error.message);
       } else if (authData.user) {
-        // Pre-fetch profile data immediately after successful login
         await queryClient.prefetchQuery({
           queryKey: ['profile', authData.user.id],
           queryFn: () => fetchProfile(authData.user.id),
@@ -178,106 +177,30 @@ const Login = () => {
 
               <div className="space-y-2">
                 <Button variant="outline" className="w-full" onClick={handleGoogleSignIn}>
-                  <svg className="mr-2 h-4 w-4" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M44.5 24<dyad-problem-report summary="29 problems">
-<problem file="src/contexts/AuthProvider.tsx" line="6" column="65" code="2307">Cannot find module '@/api/profile' or its corresponding type declarations.</problem>
-<problem file="src/components/BellManagementDialog.tsx" line="15" column="26" code="2307">Cannot find module '@/hooks/useBells' or its corresponding type declarations.</problem>
-<problem file="src/components/ScheduleGroupItem.tsx" line="14" column="30" code="2307">Cannot find module '@/hooks/useSchedules' or its corresponding type declarations.</problem>
-<problem file="src/pages/Schedules.tsx" line="15" column="30" code="2307">Cannot find module '@/hooks/useSchedules' or its corresponding type declarations.</problem>
-<problem file="src/pages/Devices.tsx" line="7" column="28" code="2307">Cannot find module '@/hooks/useDevices' or its corresponding type declarations.</problem>
-<problem file="src/pages/Dashboard.tsx" line="4" column="34" code="2307">Cannot find module '@/hooks/useDashboardData' or its corresponding type declarations.</problem>
-<problem file="src/pages/Dashboard.tsx" line="5" column="29" code="2307">Cannot find module './dashboard/DashboardHeader' or its corresponding type declarations.</problem>
-<problem file="src/pages/Dashboard.tsx" line="6" column="30" code="2307">Cannot find module './dashboard/DashboardMetrics' or its corresponding type declarations.</problem>
-<problem file="src/pages/Dashboard.tsx" line="7" column="30" code="2307">Cannot find module './dashboard/DashboardActions' or its corresponding type declarations.</problem>
-<problem file="src/pages/Dashboard.tsx" line="8" column="28" code="2307">Cannot find module './dashboard/TodaysSchedule' or its corresponding type declarations.</problem>
-<problem file="src/components/Layout.tsx" line="7" column="19" code="2459">Module '&quot;@/contexts/AuthProvider&quot;' declares 'fetchProfile' locally, but it is not exported.</problem>
-<problem file="src/components/Layout.tsx" line="9" column="10" code="2614">Module '&quot;@/pages/Schedules&quot;' has no exported member 'fetchScheduleGroups'. Did you mean to use 'import fetchScheduleGroups from &quot;@/pages/Schedules&quot;' instead?</problem>
-<problem file="src/components/Layout.tsx" line="10" column="10" code="2614">Module '&quot;@/components/BellManagementDialog&quot;' has no exported member 'fetchBellsForSchedule'. Did you mean to use 'import fetchBellsForSchedule from &quot;@/components/BellManagementDialog&quot;' instead?</problem>
-<problem file="src/components/Layout.tsx" line="11" column="10" code="2614">Module '&quot;@/pages/Devices&quot;' has no exported member 'fetchDevices'. Did you mean to use 'import fetchDevices from &quot;@/pages/Devices&quot;' instead?</problem>
-<problem file="src/components/Layout.tsx" line="12" column="10" code="2614">Module '&quot;@/pages/Dashboard&quot;' has no exported member 'fetchDashboardData'. Did you mean to use 'import fetchDashboardData from &quot;@/pages/Dashboard&quot;' instead?</problem>
-<problem file="src/pages/Settings.tsx" line="4" column="29" code="2307">Cannot find module './settings/ProfileSettings' or its corresponding type declarations.</problem>
-<problem file="src/pages/Settings.tsx" line="5" column="32" code="2307">Cannot find module './settings/AppearanceSettings' or its corresponding type declarations.</problem>
-<problem file="src/pages/Settings.tsx" line="6" column="34" code="2307">Cannot find module './settings/NotificationSettings' or its corresponding type declarations.</problem>
-<problem file="src/pages/Settings.tsx" line="7" column="24" code="2307">Cannot find module './settings/DangerZone' or its corresponding type declarations.</problem>
-<problem file="src/pages/Settings.tsx" line="8" column="36" code="2307">Cannot find module './settings/HelpAndSupportSettings' or its corresponding type declarations.</problem>
-<problem file="src/pages/Login.tsx" line="14" column="10" code="2459">Module '&quot;@/contexts/AuthProvider&quot;' declares 'fetchProfile' locally, but it is not exported.</problem>
-<problem file="src/hooks/useDashboardData.ts" line="3" column="36" code="2307">Cannot find module '@/api/dashboard' or its corresponding type declarations.</problem>
-<problem file="src/hooks/useDevices.ts" line="4" column="30" code="2307">Cannot find module '@/api/devices' or its corresponding type declarations.</problem>
-<problem file="src/hooks/useSchedules.ts" line="5" column="108" code="2307">Cannot find module '@/api/schedules' or its corresponding type declarations.</problem>
-<problem file="src/hooks/useBells.ts" line="5" column="63" code="2307">Cannot find module '@/api/bells' or its corresponding type declarations.</problem>
-<problem file="src/pages/dashboard/DashboardMetrics.tsx" line="23" column="19" code="2322">Type '{ hidden: { y: number; opacity: number; }; visible: { y: number; opacity: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
-  Property 'visible' is incompatible with index signature.
-    Type '{ y: number; opacity: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
-      Type '{ y: number; opacity: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
-        Type '{ y: number; opacity: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition&lt;any&gt;; transitionEnd?: ResolvedValues; }'.
-          Types of property 'transition' are incompatible.
-            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition&lt;any&gt;'.
-              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides&lt;any&gt;'.
-                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition&lt;any&gt;'.
-                  Types of property 'ease' are incompatible.
-                    Type 'number[]' is not assignable to type 'Easing | Easing[]'.
-                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
-                        Type 'number[]' is not assignable to type 'Easing[]'.
-                          Type 'number' is not assignable to type 'Easing'.</problem>
-<problem file="src/pages/dashboard/DashboardMetrics.tsx" line="33" column="19" code="2322">Type '{ hidden: { y: number; opacity: number; }; visible: { y: number; opacity: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
-  Property 'visible' is incompatible with index signature.
-    Type '{ y: number; opacity: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
-      Type '{ y: number; opacity: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
-        Type '{ y: number; opacity: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition&lt;any&gt;; transitionEnd?: ResolvedValues; }'.
-          Types of property 'transition' are incompatible.
-            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition&lt;any&gt;'.
-              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides&lt;any&gt;'.
-                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition&lt;any&gt;'.
-                  Types of property 'ease' are incompatible.
-                    Type 'number[]' is not assignable to type 'Easing | Easing[]'.
-                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
-                        Type 'number[]' is not assignable to type 'Easing[]'.
-                          Type 'number' is not assignable to type 'Easing'.</problem>
-<problem file="src/pages/dashboard/DashboardActions.tsx" line="38" column="17" code="2322">Type '{ hidden: { y: number; opacity: number; }; visible: { y: number; opacity: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
-  Property 'visible' is incompatible with index signature.
-    Type '{ y: number; opacity: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
-      Type '{ y: number; opacity: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
-        Type '{ y: number; opacity: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition&lt;any&gt;; transitionEnd?: ResolvedValues; }'.
-          Types of property 'transition' are incompatible.
-            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition&lt;any&gt;'.
-              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides&lt;any&gt;'.
-                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition&lt;any&gt;'.
-                  Types of property 'ease' are incompatible.
-                    Type 'number[]' is not assignable to type 'Easing | Easing[]'.
-                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
-                        Type 'number[]' is not assignable to type 'Easing[]'.
-                          Type 'number' is not assignable to type 'Easing'.</problem>
-<problem file="src/pages/dashboard/TodaysSchedule.tsx" line="35" column="17" code="2322">Type '{ hidden: { y: number; opacity: number; }; visible: { y: number; opacity: number; transition: { duration: number; ease: number[]; }; }; }' is not assignable to type 'Variants'.
-  Property 'visible' is incompatible with index signature.
-    Type '{ y: number; opacity: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'Variant'.
-      Type '{ y: number; opacity: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type 'TargetAndTransition'.
-        Type '{ y: number; opacity: number; transition: { duration: number; ease: number[]; }; }' is not assignable to type '{ transition?: Transition&lt;any&gt;; transitionEnd?: ResolvedValues; }'.
-          Types of property 'transition' are incompatible.
-            Type '{ duration: number; ease: number[]; }' is not assignable to type 'Transition&lt;any&gt;'.
-              Type '{ duration: number; ease: number[]; }' is not assignable to type 'TransitionWithValueOverrides&lt;any&gt;'.
-                Type '{ duration: number; ease: number[]; }' is not assignable to type 'ValueAnimationTransition&lt;any&gt;'.
-                  Types of property 'ease' are incompatible.
-                    Type 'number[]' is not assignable to type 'Easing | Easing[]'.
-                      Type 'number[]' is not assignable to type 'EasingFunction | Easing[]'.
-                        Type 'number[]' is not assignable to type 'Easing[]'.
-                          Type 'number' is not assignable to type 'Easing'.</problem>
-</dyad-problem-report>You're right, my apologies. It seems my last big refactor left behind a number of TypeScript errors due to incorrect import paths and type mismatches. My apologies for that. I'll clean up all 29 of them right now.
+                  <svg className="mr-2 h-4 w-4" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M44.5 24.3H24.5V34.5H36.5C34.5 40.5 29.5 44.5 24.5 44.5C16.5 44.5 10.5 38.5 10.5 30.5C10.5 22.5 16.5 16.5 24.5 16.5C28.5 16.5 31.5 18.5 33.5 20.5L40.5 13.5C36.5 9.5 31.5 6.5 24.5 6.5C13.5 6.5 4.5 15.5 4.5 26.5C4.5 37.5 13.5 46.5 24.5 46.5C35.5 46.5 44.5 38.5 44.5 26.5C44.5 25.5 44.5 24.9 44.5 24.3Z" fill="#FFC107"/><path d="M6.5 14.5L13.5 20.5C15.5 16.5 19.5 13.5 24.5 13.5C28.5 13.5 32.5 15.5 35.5 18.5L42.5 11.5C37.5 7.5 31.5 4.5 24.5 4.5C16.5 4.5 9.5 8.5 6.5 14.5Z" fill="#FF3D00"/><path d="M24.5 48.5C31.5 48.5 37.5 45.5 42.5 41.5L35.5 34.5C32.5 37.5 28.5 39.5 24.5 39.5C19.5 39.5 15.5 36.5 13.5 32.5L6.5 39.5C9.5 44.5 16.5 48.5 24.5 48.5Z" fill="#4CAF50"/><path d="M44.5 24.3H24.5V34.5H36.5C34.5 40.5 29.5 44.5 24.5 44.5C16.5 44.5 10.5 38.5 10.5 30.5C10.5 22.5 16.5 16.5 24.5 16.5C28.5 16.5 31.5 18.5 33.5 20.5L40.5 13.5C36.5 9.5 31.5 6.5 24.5 6.5C13.5 6.5 4.5 15.5 4.5 26.5C4.5 37.5 13.5 46.5 24.5 46.5C35.5 46.5 44.5 38.5 44.5 26.5C44.5 25.5 44.5 24.9 44.5 24.3Z" fill="#1976D2"/></svg>
+                  Continue with Google
+                </Button>
+                <Button variant="outline" className="w-full" onClick={handleGitHubSignIn}>
+                  <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                  Continue with GitHub
+                </Button>
+              </div>
+            </>
+          )}
 
-The core of the problem is that some components are trying to import code from the wrong places, and a few type definitions are missing or incorrect. I'll fix this by:
-
-1.  Correcting all the import paths to point to the new modular `api` and `hooks` files.
-2.  Fixing a type issue with the animation variants used on the dashboard.
-3.  Simplifying the main `Layout` component to remove unnecessary and incorrect data-fetching logic.
-
-Here are the precise changes to resolve every error.
-
-<dyad-write path="src/lib/animations.ts" description="Creating a shared animation variants file to fix type errors and ensure consistency.">
-import { Variants } from "framer-motion";
-
-export const itemVariants: Variants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { duration: 0.5, ease: "easeOut" },
-  },
+          <div className="mt-6 text-center">
+            <Button
+              variant="link"
+              className="w-full text-primary"
+              onClick={() => navigate("/signup", { state: { role, department } })}
+            >
+              Don't have an account? Sign Up
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
+
+export default Login;
