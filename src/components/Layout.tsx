@@ -10,10 +10,10 @@ import { fetchScheduleGroups } from "@/api/schedules";
 import { fetchDevices } from "@/api/devices";
 
 const navItems = [
-  { to: "/app", icon: Home, label: "Dashboard", roles: ['Admin', 'HOD', 'Student'], prefetch: () => Promise.resolve() },
-  { to: "/app/schedules", icon: Calendar, label: "Schedule", roles: ['Admin', 'HOD'], prefetch: fetchScheduleGroups },
-  { to: "/app/devices", icon: HardDrive, label: "Devices", roles: ['Admin', 'HOD'], prefetch: fetchDevices },
-  { to: "/app/settings", icon: Settings, label: "Settings", roles: ['Admin', 'HOD', 'Student'], prefetch: () => Promise.resolve() },
+  { to: "/app", icon: Home, label: "Dashboard", roles: ['Admin', 'HOD', 'Student'], prefetch: { key: 'dashboard', fn: () => Promise.resolve() } },
+  { to: "/app/schedules", icon: Calendar, label: "Schedule", roles: ['Admin', 'HOD'], prefetch: { key: 'scheduleGroups', fn: fetchScheduleGroups } },
+  { to: "/app/devices", icon: HardDrive, label: "Devices", roles: ['Admin', 'HOD'], prefetch: { key: 'devices', fn: fetchDevices } },
+  { to: "/app/settings", icon: Settings, label: "Settings", roles: ['Admin', 'HOD', 'Student'], prefetch: { key: 'settings', fn: () => Promise.resolve() } },
 ];
 
 const variants = {
@@ -97,52 +97,55 @@ const Layout = () => {
         className="absolute bottom-0 left-0 right-0 h-20 glass-surface border-t flex-shrink-0 pt-2 pb-[env(safe-area-inset-bottom)]"
       >
         <div className="flex justify-around h-full">
-          {accessibleNavItems.map((item) => (
-            <motion.div 
-              key={item.to} 
-              className="w-full h-full" 
-              whileTap={{ scale: 0.95 }}
-              onMouseEnter={() => handlePrefetch(item.to, item.prefetch)}
-            >
-              <NavLink
-                to={item.to}
-                end={item.to === "/app"}
-                className="group w-full h-full"
+          {accessibleNavItems.map((item) => {
+            const Icon = item.icon; // Capitalize the component
+            return (
+              <motion.div 
+                key={item.to} 
+                className="w-full h-full" 
+                whileTap={{ scale: 0.95 }}
+                onMouseEnter={() => handlePrefetch(item.prefetch.key, item.prefetch.fn)}
               >
-                {({ isActive }) => (
-                  <div
-                    className="flex flex-col items-center justify-center w-full h-full text-xs relative"
-                  >
-                    <item.icon
-                      className={cn(
-                        "h-5 w-5 mb-1 transition-colors",
-                        isActive
-                          ? "text-primary"
-                          : "text-slate-600 dark:text-slate-400 group-hover:text-primary"
-                      )}
-                    />
-                    <span
-                      className={cn(
-                        "transition-colors",
-                        isActive
-                          ? "font-semibold text-primary"
-                          : "text-slate-600 dark:text-slate-400 group-hover:text-primary"
-                      )}
+                <NavLink
+                  to={item.to}
+                  end={item.to === "/app"}
+                  className="group w-full h-full"
+                >
+                  {({ isActive }) => (
+                    <div
+                      className="flex flex-col items-center justify-center w-full h-full text-xs relative"
                     >
-                      {item.label}
-                    </span>
-                    {isActive && (
-                      <motion.div
-                        className="absolute bottom-1.5 h-1 w-1 bg-primary rounded-full soft-glow"
-                        layoutId="active-indicator"
-                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                      <Icon // Use the capitalized component
+                        className={cn(
+                          "h-5 w-5 mb-1 transition-colors",
+                          isActive
+                            ? "text-primary"
+                            : "text-slate-600 dark:text-slate-400 group-hover:text-primary"
+                        )}
                       />
-                    )}
-                  </div>
-                )}
-              </NavLink>
-            </motion.div>
-          ))}
+                      <span
+                        className={cn(
+                          "transition-colors",
+                          isActive
+                            ? "font-semibold text-primary"
+                            : "text-slate-600 dark:text-slate-400 group-hover:text-primary"
+                        )}
+                      >
+                        {item.label}
+                      </span>
+                      {isActive && (
+                        <motion.div
+                          className="absolute bottom-1.5 h-1 w-1 bg-primary rounded-full soft-glow"
+                          layoutId="active-indicator"
+                          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                        />
+                      )}
+                    </div>
+                  )}
+                </NavLink>
+              </motion.div>
+            );
+          })}
         </div>
       </motion.nav>
     </div>
