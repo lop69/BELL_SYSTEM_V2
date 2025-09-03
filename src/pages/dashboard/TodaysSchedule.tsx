@@ -4,15 +4,7 @@ import { Calendar, Plus } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { formatInTimeZone } from "date-fns-tz";
-
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { duration: 0.5, ease: [0.25, 1, 0.5, 1] },
-  },
-};
+import { itemVariants } from "@/lib/animations";
 
 interface DashboardBell {
   schedule_name: string;

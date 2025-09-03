@@ -4,13 +4,7 @@ import { cn } from "@/lib/utils";
 import { motion, AnimatePresence, Transition } from "framer-motion";
 import Header from "./Header";
 import { useEffect, useRef, useState } from "react";
-import { useAuth, fetchProfile } from "@/contexts/AuthProvider";
-import { useQueryClient } from "@tanstack/react-query";
-import { fetchScheduleGroups } from "@/pages/Schedules";
-import { fetchBellsForSchedule } from "@/components/BellManagementDialog";
-import { fetchDevices } from "@/pages/Devices";
-import { fetchDashboardData } from "@/pages/Dashboard";
-import { ScheduleGroup } from "@/types/database";
+import { useAuth } from "@/contexts/AuthProvider";
 
 const navItems = [
   { to: "/app", icon: Home, label: "Dashboard", roles: ['Admin', 'HOD', 'Student'] },
@@ -43,8 +37,7 @@ const transition: Transition = {
 
 const Layout = () => {
   const location = useLocation();
-  const { user, profile } = useAuth();
-  const queryClient = useQueryClient();
+  const { profile } = useAuth();
   const [direction, setDirection] = useState(0);
   const prevIndexRef = useRef(0);
 
@@ -62,54 +55,6 @@ const Layout = () => {
     return -1;
   };
   
-  useEffect(() => {
-    const prefetchAllData = async () => {
-      if (!user) return;
-
-      // --- Aggressive Pre-fetching Strategy ---
-
-      // 1. Prefetch primary data that doesn't have dependencies
-      const primaryDataPromise = Promise.all([
-        queryClient.prefetchQuery({ 
-          queryKey: ['dashboardData', user.id], 
-          queryFn: () => fetchDashboardData(user.id) 
-        }),
-        queryClient.prefetchQuery({ 
-          queryKey: ['devices'], 
-          queryFn: fetchDevices 
-        }),
-        queryClient.prefetchQuery({
-          queryKey: ['profile', user.id],
-          queryFn: () => fetchProfile(user.id),
-        })
-      ]);
-
-      // 2. Prefetch schedule groups, and once complete, prefetch bells for ALL schedules
-      const schedulesAndBellsPromise = queryClient.prefetchQuery({ 
-        queryKey: ['scheduleGroups'], 
-        queryFn: fetchScheduleGroups 
-      }).then(() => {
-        const scheduleGroups = queryClient.getQueryData<ScheduleGroup[]>(['scheduleGroups']);
-        if (scheduleGroups && scheduleGroups.length > 0) {
-          const bellPromises = scheduleGroups.flatMap(group => 
-            group.schedules.map(schedule => 
-              queryClient.prefetchQuery({
-                queryKey: ['bells', schedule.id],
-                queryFn: () => fetchBellsForSchedule(schedule.id),
-              })
-            )
-          );
-          return Promise.all(bellPromises);
-        }
-      });
-
-      // Wait for all pre-fetching to be initiated
-      await Promise.all([primaryDataPromise, schedulesAndBellsPromise]);
-    };
-
-    prefetchAllData();
-  }, [queryClient, user]);
-
   useEffect(() => {
     const currentIndex = getActiveIndex(location.pathname);
     if (currentIndex > prevIndexRef.current) {

@@ -3,15 +3,7 @@ import LiveClock from "@/components/LiveClock";
 import NextBellCountdown from "@/components/NextBellCountdown";
 import { Clock } from "lucide-react";
 import { motion } from "framer-motion";
-
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { duration: 0.5, ease: [0.25, 1, 0.5, 1] },
-  },
-};
+import { itemVariants } from "@/lib/animations";
 
 interface DashboardMetricsProps {
   nextBell: { time: Date; label: string } | null;

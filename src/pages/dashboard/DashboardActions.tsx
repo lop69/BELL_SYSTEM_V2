@@ -6,15 +6,7 @@ import { useAuth } from "@/contexts/AuthProvider";
 import { logUserAction } from "@/lib/logger";
 import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast";
 import { supabase } from "@/integrations/supabase/client";
-
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { duration: 0.5, ease: [0.25, 1, 0.5, 1] },
-  },
-};
+import { itemVariants } from "@/lib/animations";
 
 const DashboardActions = () => {
   const navigate = useNavigate();
