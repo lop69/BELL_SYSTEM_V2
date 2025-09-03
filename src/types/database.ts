@@ -1,7 +1,8 @@
 export interface Schedule {
   id: string;
   name: string;
-  user_id: string;
+  schedule_group_id: string;
+  is_active: boolean;
   created_at: string;
 }
 
@@ -24,4 +25,12 @@ export interface Profile {
   department: string | null;
   push_notifications_enabled: boolean | null;
   email_summary_enabled: boolean | null;
+}
+
+export interface ScheduleGroup {
+  id: string;
+  name: string;
+  user_id: string;
+  created_at: string;
+  schedules: Schedule[];
 }

@@ -6,10 +6,11 @@ import Header from "./Header";
 import { useEffect, useRef, useState } from "react";
 import { useAuth, fetchProfile } from "@/contexts/AuthProvider";
 import { useQueryClient } from "@tanstack/react-query";
-import { fetchSchedules, fetchBellsForSchedule } from "@/pages/Schedules";
+import { fetchScheduleGroups } from "@/pages/Schedules";
+import { fetchBellsForSchedule } from "@/components/BellManagementDialog";
 import { fetchDevices } from "@/pages/Devices";
 import { fetchDashboardData } from "@/pages/Dashboard";
-import { Schedule } from "@/types/database";
+import { ScheduleGroup } from "@/types/database";
 
 const navItems = [
   { to: "/app", icon: Home, label: "Dashboard", roles: ['Admin', 'HOD', 'Student', 'Guest'] },
@@ -83,20 +84,20 @@ const Layout = () => {
         })
       ]);
 
-      // 2. Prefetch schedules, and once complete, prefetch bells for ALL schedules
+      // 2. Prefetch schedule groups, and once complete, prefetch bells for ALL schedules
       const schedulesAndBellsPromise = queryClient.prefetchQuery({ 
-        queryKey: ['schedules'], 
-        queryFn: fetchSchedules 
+        queryKey: ['scheduleGroups'], 
+        queryFn: fetchScheduleGroups 
       }).then(() => {
-        // This .then() block runs after schedules have been fetched and cached.
-        const schedules = queryClient.getQueryData<Schedule[]>(['schedules']);
-        if (schedules && schedules.length > 0) {
-          // Create an array of promises to prefetch bells for each schedule concurrently
-          const bellPromises = schedules.map(schedule => 
-            queryClient.prefetchQuery({
-              queryKey: ['bells', schedule.id],
-              queryFn: () => fetchBellsForSchedule(schedule.id),
-            })
+        const scheduleGroups = queryClient.getQueryData<ScheduleGroup[]>(['scheduleGroups']);
+        if (scheduleGroups && scheduleGroups.length > 0) {
+          const bellPromises = scheduleGroups.flatMap(group => 
+            group.schedules.map(schedule => 
+              queryClient.prefetchQuery({
+                queryKey: ['bells', schedule.id],
+                queryFn: () => fetchBellsForSchedule(schedule.id),
+              })
+            )
           );
           return Promise.all(bellPromises);
         }
