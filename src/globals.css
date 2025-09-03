@@ -73,11 +73,11 @@
     100% { background-position: 0% 50%; }
   }
   .soft-glow {
-    box-shadow: 0 0 15px theme('colors.primary / 20%'), 0 0 30px theme('colors.sky.400 / 15%');
+    box-shadow: 0 0 15px hsla(var(--primary), 0.2), 0 0 30px hsla(var(--sky-400), 0.15);
   }
   @keyframes breathing {
-    0%, 100% { transform: scale(1); box-shadow: 0 0 15px theme('colors.primary / 20%'); }
-    50% { transform: scale(1.03); box-shadow: 0 0 25px theme('colors.primary / 30%'); }
+    0%, 100% { transform: scale(1); box-shadow: 0 0 15px hsla(var(--primary), 0.2); }
+    50% { transform: scale(1.03); box-shadow: 0 0 25px hsla(var(--primary), 0.3); }
   }
 }
 
