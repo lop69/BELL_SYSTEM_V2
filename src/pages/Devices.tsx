@@ -1,6 +1,5 @@
 import React, { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthProvider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Wifi, WifiOff, HardDrive, ServerCrash } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,19 +12,23 @@ interface Device {
   device_name: string;
   is_connected: boolean;
   last_seen: string;
-  schedules: { name: string } | null;
+  schedule_groups: {
+    schedules: {
+      name: string;
+      is_active: boolean;
+    }[];
+  } | null;
 }
 
 export const fetchDevices = async () => {
   const { data, error } = await supabase
     .from("devices")
-    .select("*, schedules(name)");
+    .select("*, schedule_groups(schedules(name, is_active))");
   if (error) throw new Error(error.message);
   return (data as any[]) || [];
 };
 
 const Devices = () => {
-  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: devices = [], isLoading, isError } = useQuery<Device[]>({
@@ -48,6 +51,14 @@ const Devices = () => {
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
+
+  const getActiveScheduleName = (device: Device): string => {
+    if (!device.schedule_groups || !device.schedule_groups.schedules || device.schedule_groups.schedules.length === 0) {
+      return "Unassigned";
+    }
+    const activeSchedule = device.schedule_groups.schedules.find(s => s.is_active);
+    return activeSchedule ? activeSchedule.name : "No Active Schedule";
+  };
 
   if (isLoading) {
     return (
@@ -128,7 +139,7 @@ const Devices = () => {
                       <div>
                         <p className="font-semibold">{device.device_name}</p>
                         <p className="text-sm text-muted-foreground">
-                          Schedule: {device.schedules?.name || "Unassigned"}
+                          Schedule: {getActiveScheduleName(device)}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           Last seen: {device.last_seen ? formatDistanceToNow(new Date(device.last_seen), { addSuffix: true }) : "Never"}
