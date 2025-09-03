@@ -1,5 +1,5 @@
 import { useAuth } from "@/contexts/AuthProvider";
-import { User, Bell, LogOut, Palette, Edit, ShieldAlert, LifeBuoy, Phone, Building, Briefcase } from "lucide-react";
+import { User, Bell, LogOut, Palette, Edit, ShieldAlert, LifeBuoy, Phone, Building, Briefcase, Loader2 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,20 @@ import { showSuccess, showError, showLoading, dismissToast } from "@/utils/toast
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
 import { logUserAction } from "@/lib/logger";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+
+const profileFormSchema = z.object({
+  first_name: z.string().min(1, "First name is required."),
+  last_name: z.string().min(1, "Last name is required."),
+  phone_number: z.string().optional(),
+  department: z.string().min(1, "Department is required."),
+  role: z.string().min(1, "Role is required."),
+});
+
+type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 const SettingsSkeleton = () => (
   <div className="space-y-6">
@@ -33,18 +47,22 @@ const SettingsSkeleton = () => (
 const Settings = () => {
   const { signOut, user, profile: authProfile, updateProfile } = useAuth();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState({
-    first_name: "",
-    last_name: "",
-    phone_number: "",
-    department: "",
-    role: "",
-  });
   const [isProfileDialogOpen, setIsProfileDialogOpen] = useState(false);
+
+  const form = useForm<ProfileFormValues>({
+    resolver: zodResolver(profileFormSchema),
+    defaultValues: {
+      first_name: "",
+      last_name: "",
+      phone_number: "",
+      department: "",
+      role: "",
+    },
+  });
 
   useEffect(() => {
     if (authProfile) {
-      setProfile({
+      form.reset({
         first_name: authProfile.first_name || "",
         last_name: authProfile.last_name || "",
         phone_number: authProfile.phone_number || "",
@@ -52,16 +70,15 @@ const Settings = () => {
         role: authProfile.role || "",
       });
     }
-  }, [authProfile]);
+  }, [authProfile, form]);
 
-  const handleProfileUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleProfileUpdate = async (values: ProfileFormValues) => {
     if (!user) return;
 
-    logUserAction(user, 'UPDATE_PROFILE', { updatedFields: Object.keys(profile) });
+    logUserAction(user, 'UPDATE_PROFILE', { updatedFields: Object.keys(values) });
     const toastId = showLoading("Updating profile...");
     try {
-      await updateProfile(profile);
+      await updateProfile(values);
       dismissToast(toastId);
       showSuccess("Profile updated successfully!");
       setIsProfileDialogOpen(false);
@@ -123,16 +140,23 @@ const Settings = () => {
               <DialogTrigger asChild><Button variant="outline" className="w-full"><Edit className="mr-2 h-4 w-4" /> Edit Profile</Button></DialogTrigger>
               <DialogContent className="glass-card">
                 <DialogHeader><DialogTitle>Edit Profile</DialogTitle><DialogDescription>Update your personal and professional information.</DialogDescription></DialogHeader>
-                <form onSubmit={handleProfileUpdate} className="space-y-4 pt-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><Label htmlFor="firstName">First Name</Label><Input id="firstName" value={profile.first_name || ''} onChange={(e) => setProfile({...profile, first_name: e.target.value})} className="glass-input" /></div>
-                    <div><Label htmlFor="lastName">Last Name</Label><Input id="lastName" value={profile.last_name || ''} onChange={(e) => setProfile({...profile, last_name: e.target.value})} className="glass-input" /></div>
-                  </div>
-                  <div><Label htmlFor="phone">Phone Number</Label><div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input id="phone" type="tel" value={profile.phone_number || ''} onChange={(e) => setProfile({...profile, phone_number: e.target.value})} className="pl-10 glass-input" /></div></div>
-                  <div><Label htmlFor="department">Department</Label><div className="relative"><Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input id="department" value={profile.department || ''} onChange={(e) => setProfile({...profile, department: e.target.value})} className="pl-10 glass-input" /></div></div>
-                  <div><Label htmlFor="role">Role</Label><div className="relative"><Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input id="role" value={profile.role || ''} onChange={(e) => setProfile({...profile, role: e.target.value})} className="pl-10 glass-input" /></div></div>
-                  <DialogFooter><Button type="submit" className="gradient-button">Save Changes</Button></DialogFooter>
-                </form>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(handleProfileUpdate)} className="space-y-4 pt-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField control={form.control} name="first_name" render={({ field }) => (<FormItem><FormLabel>First Name</FormLabel><FormControl><Input {...field} className="glass-input" /></FormControl><FormMessage /></FormItem>)} />
+                      <FormField control={form.control} name="last_name" render={({ field }) => (<FormItem><FormLabel>Last Name</FormLabel><FormControl><Input {...field} className="glass-input" /></FormControl><FormMessage /></FormItem>)} />
+                    </div>
+                    <FormField control={form.control} name="phone_number" render={({ field }) => (<FormItem><FormLabel>Phone Number</FormLabel><div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input type="tel" {...field} className="pl-10 glass-input" /></FormControl></div><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="department" render={({ field }) => (<FormItem><FormLabel>Department</FormLabel><div className="relative"><Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input {...field} className="pl-10 glass-input" /></FormControl></div><FormMessage /></FormItem>)} />
+                    <FormField control={form.control} name="role" render={({ field }) => (<FormItem><FormLabel>Role</FormLabel><div className="relative"><Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><FormControl><Input {...field} className="pl-10 glass-input" /></FormControl></div><FormMessage /></FormItem>)} />
+                    <DialogFooter>
+                      <Button type="submit" className="gradient-button" disabled={form.formState.isSubmitting}>
+                        {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Changes
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
               </DialogContent>
             </Dialog>
             <Button variant="destructive" className="w-full" onClick={signOut}><LogOut className="mr-2 h-4 w-4" /> Sign Out</Button>
