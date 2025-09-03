@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, MoreVertical, Trash2, Edit, Loader2, ServerCrash, BellOff, Calendar } from "lucide-react";
+import { Plus, Trash2, Loader2, ServerCrash, BellOff, Calendar } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +24,7 @@ import BellItem from "@/components/BellItem";
 
 const daysOfWeek = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-// --- Data Fetching ---
+// --- Data Fetching & Keys ---
 const schedulesQueryKey: QueryKey = ['schedules'];
 const bellsQueryKey = (scheduleId: string): QueryKey => ['bells', scheduleId];
 
@@ -62,17 +62,20 @@ const BellForm = ({ schedules, activeTab, bell, onFinished }: { schedules: Sched
       logUserAction(user, action, { bellId: bell?.id, scheduleId: values.schedule_id, label: values.label });
       
       const bellData = { ...values, user_id: user.id };
-      const { error } = bell
-        ? await supabase.from("bells").update(bellData).eq("id", bell.id)
-        : await supabase.from("bells").insert(bellData);
+      const { data, error } = bell
+        ? await supabase.from("bells").update(bellData).eq("id", bell.id).select().single()
+        : await supabase.from("bells").insert(bellData).select().single();
       if (error) throw error;
+      return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bells'] });
       showSuccess(`Bell ${bell ? 'updated' : 'added'} successfully!`);
       onFinished();
     },
     onError: (error) => showError(error.message),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['bells'] });
+    }
   });
 
   return (
@@ -110,15 +113,18 @@ const ScheduleForm = ({ onFinished }: { onFinished: () => void }) => {
     mutationFn: async (values: ScheduleFormValues) => {
       if (!user) throw new Error("User not authenticated");
       logUserAction(user, 'CREATE_SCHEDULE', { name: values.name });
-      const { error } = await supabase.from("schedules").insert({ name: values.name, user_id: user.id });
+      const { data, error } = await supabase.from("schedules").insert({ name: values.name, user_id: user.id }).select().single();
       if (error) throw error;
+      return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: schedulesQueryKey });
       showSuccess("Schedule created!");
       onFinished();
     },
     onError: (error) => showError(error.message),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: schedulesQueryKey });
+    }
   });
 
   return (
@@ -138,10 +144,10 @@ const ScheduleBells = React.memo(({ scheduleId, onEdit, onDelete }: { scheduleId
   const { data: bells = [], isLoading } = useQuery<Bell[]>({
     queryKey: bellsQueryKey(scheduleId),
     queryFn: () => fetchBellsForSchedule(scheduleId),
-    staleTime: 1000 * 60 * 5, // Cache data for 5 minutes
+    staleTime: 1000 * 60 * 5,
   });
 
-  if (isLoading) return <div className="space-y-3"><Skeleton className="h-16 w-full" /><Skeleton className="h-16 w-full" /></div>;
+  if (isLoading) return <div className="space-y-3"><Skeleton className="h-20 w-full rounded-2xl" /><Skeleton className="h-20 w-full rounded-2xl" /></div>;
 
   return (
     <AnimatePresence>
@@ -169,7 +175,6 @@ const Schedules = () => {
   const { data: schedules = [], isLoading: schedulesLoading, isError: schedulesError } = useQuery<Schedule[]>({
     queryKey: schedulesQueryKey,
     queryFn: fetchSchedules,
-    staleTime: 1000 * 60 * 5, // Cache data for 5 minutes
   });
 
   useEffect(() => {
@@ -177,21 +182,6 @@ const Schedules = () => {
       setActiveTab(schedules[0].id);
     }
   }, [schedules, activeTab]);
-
-  useEffect(() => {
-    const handleChanges = () => {
-      queryClient.invalidateQueries({ queryKey: schedulesQueryKey });
-      if (activeTab) {
-        queryClient.invalidateQueries({ queryKey: bellsQueryKey(activeTab) });
-      }
-    };
-
-    const channel = supabase.channel('public-db-changes').on('postgres_changes', { event: '*', schema: 'public' }, handleChanges).subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient, activeTab]);
 
   const activeIndex = schedules.findIndex(s => s.id === activeTab);
 
@@ -207,6 +197,9 @@ const Schedules = () => {
       setActiveTab(newSchedules.length > 0 ? newSchedules[0].id : undefined);
     },
     onError: (error) => showError(error.message),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: schedulesQueryKey });
+    }
   });
 
   const deleteBellMutation = useMutation({
@@ -217,6 +210,9 @@ const Schedules = () => {
     },
     onSuccess: () => showSuccess("Bell deleted."),
     onError: (error) => showError(error.message),
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['bells'] });
+    }
   });
 
   const handleEditBell = useCallback((bell: Bell) => {
