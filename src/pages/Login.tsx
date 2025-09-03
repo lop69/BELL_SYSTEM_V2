@@ -10,6 +10,8 @@ import { z } from "zod";
 import { showError, showSuccess, showLoading, dismissToast } from "@/utils/toast";
 import { BellRing, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useAuth } from "@/contexts/AuthProvider";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchProfile } from "@/contexts/AuthProvider";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -26,6 +28,7 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { session } = useAuth();
+  const queryClient = useQueryClient();
 
   const {
     register,
@@ -49,16 +52,23 @@ const Login = () => {
     const toastId = showLoading("Logging in...");
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data: authData, error } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       });
 
       if (error) {
         showError(error.message);
-      } else {
+      } else if (authData.user) {
+        // Pre-fetch profile data immediately after successful login
+        await queryClient.prefetchQuery({
+          queryKey: ['profile', authData.user.id],
+          queryFn: () => fetchProfile(authData.user.id),
+        });
         showSuccess("Logged in successfully!");
         navigate("/app");
+      } else {
+        throw new Error("Login successful but no user data received.");
       }
     } catch (error: any) {
       showError(error.message || "An unexpected error occurred");
