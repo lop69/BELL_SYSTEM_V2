@@ -76,20 +76,20 @@
     box-shadow: 0 0 15px theme('colors.primary / 20%'), 0 0 30px theme('colors.sky.400 / 15%');
   }
   @keyframes breathing {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.03); }
+    0%, 100% { transform: scale(1); box-shadow: 0 0 15px theme('colors.primary / 20%'); }
+    50% { transform: scale(1.03); box-shadow: 0 0 25px theme('colors.primary / 30%'); }
   }
 }
 
 @layer components {
   .main-gradient {
-    @apply bg-gradient-to-br from-gray-50 to-gray-200 dark:from-black dark:to-slate-900;
+    @apply bg-gradient-to-br from-gray-50 via-slate-100 to-sky-100 dark:from-black dark:via-slate-900 dark:to-sky-950;
     background-size: 200% 200%;
     animation: background-pan 20s ease infinite;
   }
 
   .glass-card {
-    @apply bg-white/40 dark:bg-slate-900/40 backdrop-blur-2xl border border-white/20 dark:border-white/10 rounded-2xl shadow-lg dark:shadow-black/30;
+    @apply bg-white/40 dark:bg-slate-900/40 backdrop-blur-2xl border border-white/20 dark:border-white/10 rounded-2xl shadow-lg dark:shadow-black/30 transition-all duration-300;
     -webkit-backdrop-filter: blur(24px) saturate(180%);
   }
 

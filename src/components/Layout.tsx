@@ -5,12 +5,15 @@ import { motion, AnimatePresence, Transition } from "framer-motion";
 import Header from "./Header";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthProvider";
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchScheduleGroups } from "@/api/schedules";
+import { fetchDevices } from "@/api/devices";
 
 const navItems = [
-  { to: "/app", icon: Home, label: "Dashboard", roles: ['Admin', 'HOD', 'Student'] },
-  { to: "/app/schedules", icon: Calendar, label: "Schedule", roles: ['Admin', 'HOD'] },
-  { to: "/app/devices", icon: HardDrive, label: "Devices", roles: ['Admin', 'HOD'] },
-  { to: "/app/settings", icon: Settings, label: "Settings", roles: ['Admin', 'HOD', 'Student'] },
+  { to: "/app", icon: Home, label: "Dashboard", roles: ['Admin', 'HOD', 'Student'], prefetch: () => Promise.resolve() },
+  { to: "/app/schedules", icon: Calendar, label: "Schedule", roles: ['Admin', 'HOD'], prefetch: fetchScheduleGroups },
+  { to: "/app/devices", icon: HardDrive, label: "Devices", roles: ['Admin', 'HOD'], prefetch: fetchDevices },
+  { to: "/app/settings", icon: Settings, label: "Settings", roles: ['Admin', 'HOD', 'Student'], prefetch: () => Promise.resolve() },
 ];
 
 const variants = {
@@ -38,12 +41,17 @@ const transition: Transition = {
 const Layout = () => {
   const location = useLocation();
   const { profile } = useAuth();
+  const queryClient = useQueryClient();
   const [direction, setDirection] = useState(0);
   const prevIndexRef = useRef(0);
 
   const accessibleNavItems = navItems.filter(item => 
     profile?.role && item.roles.includes(profile.role)
   );
+
+  const handlePrefetch = (queryKey: string, queryFn: () => Promise<any>) => {
+    queryClient.prefetchQuery({ queryKey: [queryKey], queryFn });
+  };
 
   const getActiveIndex = (pathname: string) => {
     const reversedNavItems = [...accessibleNavItems].reverse();
@@ -90,7 +98,12 @@ const Layout = () => {
       >
         <div className="flex justify-around h-full">
           {accessibleNavItems.map((item) => (
-            <motion.div key={item.to} className="w-full h-full" whileTap={{ scale: 0.95 }}>
+            <motion.div 
+              key={item.to} 
+              className="w-full h-full" 
+              whileTap={{ scale: 0.95 }}
+              onMouseEnter={() => handlePrefetch(item.to, item.prefetch)}
+            >
               <NavLink
                 to={item.to}
                 end={item.to === "/app"}

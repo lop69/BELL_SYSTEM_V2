@@ -30,24 +30,33 @@ const DashboardActions = () => {
     <motion.div variants={itemVariants}>
       <Card className="glass-card p-4">
         <CardContent className="p-2 flex justify-around items-center">
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="text-center">
-            <button onClick={() => navigate('/app/schedules')} className="group flex flex-col items-center justify-center w-20 h-20 rounded-2xl bg-sky-500/10 hover:bg-sky-500/20 transition-colors">
-              <Plus className="h-7 w-7 mb-1 text-sky-500 transition-transform group-hover:scale-110" />
-              <span className="text-xs font-medium text-muted-foreground group-hover:text-primary">Add Bell</span>
-            </button>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="text-center">
-            <button onClick={() => navigate('/app/schedules')} className="group flex flex-col items-center justify-center w-20 h-20 rounded-2xl bg-indigo-500/10 hover:bg-indigo-500/20 transition-colors">
-              <Edit className="h-7 w-7 mb-1 text-indigo-500 transition-transform group-hover:scale-110" />
-              <span className="text-xs font-medium text-muted-foreground group-hover:text-primary">Edit</span>
-            </button>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="text-center">
-            <button onClick={handleTestBell} className="group flex flex-col items-center justify-center w-20 h-20 rounded-2xl bg-green-500/10 hover:bg-green-500/20 transition-colors">
-              <BellRing className="h-7 w-7 mb-1 text-green-500 transition-transform group-hover:scale-110" />
-              <span className="text-xs font-medium text-muted-foreground group-hover:text-primary">Test Bell</span>
-            </button>
-          </motion.div>
+          <motion.button 
+            onClick={() => navigate('/app/schedules')} 
+            className="group flex flex-col items-center justify-center w-20 h-20 rounded-2xl bg-sky-500/10 hover:bg-sky-500/20 transition-colors"
+            whileHover={{ scale: 1.05 }} 
+            whileTap={{ scale: 0.95 }}
+          >
+            <Plus className="h-7 w-7 mb-1 text-sky-500 transition-transform group-hover:scale-110" />
+            <span className="text-xs font-medium text-muted-foreground group-hover:text-primary">Add Bell</span>
+          </motion.button>
+          <motion.button 
+            onClick={() => navigate('/app/schedules')} 
+            className="group flex flex-col items-center justify-center w-20 h-20 rounded-2xl bg-indigo-500/10 hover:bg-indigo-500/20 transition-colors"
+            whileHover={{ scale: 1.05 }} 
+            whileTap={{ scale: 0.95 }}
+          >
+            <Edit className="h-7 w-7 mb-1 text-indigo-500 transition-transform group-hover:scale-110" />
+            <span className="text-xs font-medium text-muted-foreground group-hover:text-primary">Edit</span>
+          </motion.button>
+          <motion.button 
+            onClick={handleTestBell} 
+            className="group flex flex-col items-center justify-center w-20 h-20 rounded-2xl bg-green-500/10 hover:bg-green-500/20 transition-colors"
+            whileHover={{ scale: 1.05 }} 
+            whileTap={{ scale: 0.95 }}
+          >
+            <BellRing className="h-7 w-7 mb-1 text-green-500 transition-transform group-hover:scale-110" />
+            <span className="text-xs font-medium text-muted-foreground group-hover:text-primary">Test Bell</span>
+          </motion.button>
         </CardContent>
       </Card>
     </motion.div>

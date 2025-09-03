@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, ServerCrash, Calendar, Loader2 } from "lucide-react";
+import { Plus, ServerCrash, Calendar, Loader2, Search } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion } from "@/components/ui/accordion";
 import { Skeleton } from "@/components/ui/skeleton";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { scheduleFormSchema, ScheduleFormValues } from "@/lib/schemas";
@@ -13,6 +13,24 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import ScheduleGroupItem from "@/components/ScheduleGroupItem";
 import { useSchedules } from "@/hooks/useSchedules";
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+  },
+};
 
 const ScheduleGroupForm = ({ onFinished }: { onFinished: () => void }) => {
   const { addGroup, isAddingGroup } = useSchedules();
@@ -54,7 +72,13 @@ const ScheduleGroupForm = ({ onFinished }: { onFinished: () => void }) => {
 
 const Schedules = () => {
   const [isAddGroupOpen, setIsAddGroupOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const { scheduleGroups, isLoading, isError } = useSchedules();
+
+  const filteredGroups = useMemo(() =>
+    scheduleGroups.filter(group =>
+      group.name.toLowerCase().includes(searchTerm.toLowerCase())
+    ), [scheduleGroups, searchTerm]);
 
   if (isLoading) {
     return (
@@ -63,6 +87,7 @@ const Schedules = () => {
           <Skeleton className="h-8 w-1/3" />
           <Skeleton className="h-4 w-1/2 mt-2" />
         </div>
+        <Skeleton className="h-10 w-full rounded-lg" />
         <div className="space-y-4">
           <Skeleton className="h-12 w-full rounded-lg" />
           <Skeleton className="h-12 w-full rounded-lg" />
@@ -104,11 +129,31 @@ const Schedules = () => {
         </Dialog>
       </div>
 
-      {scheduleGroups.length > 0 ? (
-        <Accordion type="single" collapsible className="w-full space-y-4">
-          {scheduleGroups.map((group) => (
-            <ScheduleGroupItem key={group.id} group={group} />
-          ))}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input 
+          placeholder="Search groups..."
+          className="pl-10 glass-input"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
+      {filteredGroups.length > 0 ? (
+        <Accordion type="single" collapsible className="w-full space-y-4" asChild>
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+          >
+            <AnimatePresence>
+              {filteredGroups.map((group) => (
+                <motion.div key={group.id} variants={itemVariants} layout>
+                  <ScheduleGroupItem group={group} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </motion.div>
         </Accordion>
       ) : (
         <Card className="glass-card text-center p-8 flex flex-col items-center gap-4">
@@ -120,8 +165,10 @@ const Schedules = () => {
             <Calendar className="h-16 w-16 text-primary/30" />
           </motion.div>
           <CardHeader className="p-0">
-            <CardTitle>No Schedule Groups Yet</CardTitle>
-            <CardDescription>Click the '+ Group' button to create your first group.</CardDescription>
+            <CardTitle>No Schedule Groups Found</CardTitle>
+            <CardDescription>
+              {searchTerm ? `No groups match "${searchTerm}".` : "Click the '+ Group' button to create one."}
+            </CardDescription>
           </CardHeader>
         </Card>
       )}
