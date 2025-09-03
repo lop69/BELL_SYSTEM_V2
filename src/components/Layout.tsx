@@ -45,9 +45,12 @@ const Layout = () => {
   const [direction, setDirection] = useState(0);
   const prevIndexRef = useRef(0);
 
-  const accessibleNavItems = navItems.filter(item => 
-    profile?.role && item.roles.includes(profile.role)
-  );
+  const accessibleNavItems = navItems.filter(item => {
+    if (!profile?.role) return false;
+    const userRole = profile.role.trim().toLowerCase();
+    const allowedRolesLower = item.roles.map(r => r.toLowerCase());
+    return allowedRolesLower.includes(userRole);
+  });
 
   const handlePrefetch = (queryKey: string, queryFn: () => Promise<any>) => {
     queryClient.prefetchQuery({ queryKey: [queryKey], queryFn });

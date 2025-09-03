@@ -13,10 +13,15 @@ const RoleProtectedRoute = ({ allowedRoles }: RoleProtectedRouteProps) => {
     return <FullScreenLoader />;
   }
 
-  // The role check is only performed if a profile exists.
-  // The main ProtectedRoute already handles non-authenticated users.
-  if (profile && !allowedRoles.includes(profile.role!)) {
-    // Redirect them to the main app dashboard if they don't have access.
+  if (profile?.role) {
+    const userRole = profile.role.trim().toLowerCase();
+    const allowedRolesLower = allowedRoles.map(r => r.toLowerCase());
+    if (!allowedRolesLower.includes(userRole)) {
+      // Redirect them to the main app dashboard if they don't have access.
+      return <Navigate to="/app" replace />;
+    }
+  } else {
+    // This case should be handled by the main ProtectedRoute, but as a fallback:
     return <Navigate to="/app" replace />;
   }
 
