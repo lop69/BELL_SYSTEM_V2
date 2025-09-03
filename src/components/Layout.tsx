@@ -13,10 +13,10 @@ import { fetchDashboardData } from "@/pages/Dashboard";
 import { ScheduleGroup } from "@/types/database";
 
 const navItems = [
-  { to: "/app", icon: Home, label: "Dashboard", roles: ['Admin', 'HOD', 'Student', 'Guest'] },
-  { to: "/app/schedules", icon: Calendar, label: "Schedule", roles: ['Admin', 'HOD', 'Student', 'Guest'] },
-  { to: "/app/devices", icon: HardDrive, label: "Devices", roles: ['Admin', 'HOD', 'Student', 'Guest'] },
-  { to: "/app/settings", icon: Settings, label: "Settings", roles: ['Admin', 'HOD', 'Student', 'Guest'] },
+  { to: "/app", icon: Home, label: "Dashboard", roles: ['Admin', 'HOD', 'Student'] },
+  { to: "/app/schedules", icon: Calendar, label: "Schedule", roles: ['Admin', 'HOD'] },
+  { to: "/app/devices", icon: HardDrive, label: "Devices", roles: ['Admin', 'HOD'] },
+  { to: "/app/settings", icon: Settings, label: "Settings", roles: ['Admin', 'HOD', 'Student'] },
 ];
 
 const variants = {
@@ -43,14 +43,14 @@ const transition: Transition = {
 
 const Layout = () => {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const queryClient = useQueryClient();
   const [direction, setDirection] = useState(0);
   const prevIndexRef = useRef(0);
 
-  const accessibleNavItems = navItems.filter(() => {
-    return !!user;
-  });
+  const accessibleNavItems = navItems.filter(item => 
+    profile?.role && item.roles.includes(profile.role)
+  );
 
   const getActiveIndex = (pathname: string) => {
     const reversedNavItems = [...accessibleNavItems].reverse();

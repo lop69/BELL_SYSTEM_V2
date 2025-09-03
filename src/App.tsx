@@ -16,6 +16,7 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 const Login = lazy(() => import("./pages/Login"));
 const SignUp = lazy(() => import("./pages/SignUp"));
 const ProtectedRoute = lazy(() => import("./components/ProtectedRoute"));
+const RoleProtectedRoute = lazy(() => import("./components/RoleProtectedRoute"));
 const SplashScreen = lazy(() => import("./pages/SplashScreen"));
 const DepartmentSelection = lazy(() => import("./pages/DepartmentSelection"));
 const RoleSelection = lazy(() => import("./pages/RoleSelection"));
@@ -47,10 +48,14 @@ const App = () => (
                       <Route element={<ProtectedRoute />}>
                         <Route path="/app" element={<Layout />}>
                           <Route index element={<Dashboard />} />
-                          <Route path="schedules" element={<Schedules />} />
-                          <Route path="devices" element={<Devices />} />
                           <Route path="settings" element={<Settings />} />
                           <Route path="support" element={<HelpAndSupport />} />
+                          
+                          {/* Routes for Admin and HOD only */}
+                          <Route element={<RoleProtectedRoute allowedRoles={['Admin', 'HOD']} />}>
+                            <Route path="schedules" element={<Schedules />} />
+                            <Route path="devices" element={<Devices />} />
+                          </Route>
                         </Route>
                       </Route>
                       <Route path="*" element={<NotFound />} />
