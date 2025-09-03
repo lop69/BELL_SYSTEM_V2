@@ -23,10 +23,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  const { data: profile, isLoading: profileLoading } = useQuery({
+  const { data: profile, isLoading: profileLoading, isRefetching } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: () => fetchProfile(user!.id),
     enabled: !!user,
+    // Poll for the profile for up to 5 seconds to handle the race condition
+    // where the app loads faster than the database trigger can create the profile.
+    refetchInterval: (query) => {
+      if (query.state.status === 'success' && query.state.data === null && Date.now() - query.state.dataUpdatedAt < 5000) {
+        return 1000; // Poll every 1 second
+      }
+      return false; // Stop polling
+    },
   });
 
   const profileMutation = useMutation({
@@ -57,11 +65,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     queryClient.clear();
   };
 
+  // Keep the app in a loading state during auth, initial profile fetch, and while polling for the profile.
+  const isPollingForProfile = profile === null && isRefetching;
+  const isLoading = authLoading || (!!user && profileLoading) || (!!user && isPollingForProfile);
+
   const value = {
     user,
     session,
     profile: profile ?? null,
-    loading: authLoading || (!!user && profileLoading),
+    loading: isLoading,
     signOut,
     updateProfile: profileMutation.mutate,
   };
